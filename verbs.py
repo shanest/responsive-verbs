@@ -81,19 +81,53 @@ class Verb(object):
 
     @abc.abstractmethod
     def generate_true(num_worlds):
+        """Generate true examples of your Verb.
+
+        Args:
+            num_worlds: how many worlds
+
+        Returns:
+            partition: 1-D array, a partition
+            world: int, the actual world
+            dox_w: 1-D array of 1s and 0s, the agent's doxastic state
+        """
         pass
 
     @abc.abstractmethod
     def generate_false(num_worlds):
+        """Generate false examples of your Verb.
+
+        Args:
+            num_worlds: how many worlds
+
+        Returns:
+            partition: 1-D array, a partition
+            world: int, the actual world
+            dox_w: 1-D array of 1s and 0s, the agent's doxastic state
+        """
         pass
 
     @classmethod
     def generate(cls, num_worlds, truth_value):
+        """Generate examples.  Calls generate_true or generate_false based on
+        the argument truth_value.
+        """
         return (cls.generate_true(num_worlds) if truth_value else
                 cls.generate_false(num_worlds))
 
     @staticmethod
     def initialize(num_worlds):
+        """Perform initial prep for generate functions.
+
+        Args:
+            num_worlds: how many worlds
+
+        Returns:
+            partition: generate_partition(num_worlds, is_declarative)
+            world: a random integer up to num_worlds
+            dox_w: a 1-D zero array of length num_worlds
+            is_declarative: boolean, whether it's a declarative example or not
+        """
         is_declarative = np.random.random() < 0.5
         partition = generate_partition(num_worlds, is_declarative)
         world = np.random.randint(num_worlds)
@@ -130,7 +164,6 @@ class Know(Verb):
         # Q_w.  for now, these are weighted equally, but should they be?
         # also, both are possible, even with the current coin flip, which seems
         # like a good thing
-        # dox_w = np.random.choice([0.0, 1.0], size=[num_worlds])
         dox_w[np.random.random(len(dox_w)) < 0.5] = 1
         not_world_cell = np.where(partition != partition[world])[0]
         if np.random.random() < 0.5 or len(not_world_cell) == 0:
