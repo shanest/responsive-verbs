@@ -136,6 +136,8 @@ class Verb(object):
 
 
 class Know(Verb):
+    """Verb meaning: \Q \w: dox_w is a subset of info(Q) & w in dox_w
+    """
 
     @staticmethod
     def generate_true(num_worlds):
@@ -181,6 +183,8 @@ class Know(Verb):
 
 
 class Guess(Verb):
+    """Verb meaning: \Q \w: dox_w is a subset of q for some q in alt(Q)
+    """
 
     @staticmethod
     def generate_true(num_worlds):
@@ -225,6 +229,9 @@ class Guess(Verb):
 
 
 class Wondows(Verb):
+    """Verb meaning: \Q \w: dox_w is a subset of info(Q) & w in dox_w & for
+    every p in alt(Q), dox_w intersection p is not empty
+    """
 
     @staticmethod
     def generate_true(num_worlds):
@@ -291,6 +298,8 @@ class Wondows(Verb):
 
 
 class Knopinion(Verb):
+    """Verb meaning: \Q \w: dox_w is a subset of Q_w or dox_w is in inq-neg(Q)
+    """
 
     @staticmethod
     def generate_true(num_worlds):
