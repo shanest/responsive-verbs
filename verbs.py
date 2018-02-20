@@ -191,6 +191,125 @@ class Guess(Verb):
         return partition, world, dox_w
 
 
+class Wondows(Verb):
+
+    @staticmethod
+    def generate_true(num_worlds):
+
+        partition, world, dox_w, is_declarative = Verb.initialize(num_worlds)
+
+        # need P to be true at w for declarative
+        if is_declarative:
+            partition[world] = 1
+
+        # 1. dox_w is a subset of info(Q)
+        info_q = np.nonzero(partition)[0]
+        to_add = info_q[np.random.random(len(info_q)) < 0.5]
+        dox_w[to_add] = 1
+        if len(to_add) == 0:
+            dox_w[np.random.choice(info_q)] = 1
+
+        # 2. w in dox_w
+        dox_w[world] = 1
+
+        # 3. non-empty intersection with every q in alt(Q)
+        cells = np.unique(partition)
+        alternatives = cells[np.nonzero(cells)]
+        for idx in range(len(alternatives)):
+            # TODO: refactor this, and its use in Guess.generate_false, out
+            cell = np.where(partition == alternatives[idx])[0]
+            to_add = cell[np.random.random(len(cell)) < 0.5]
+            dox_w[to_add] = 1
+            # make sure one world from each cell gets added
+            if len(to_add) == 0:
+                dox_w[np.random.choice(cell)] = 1
+
+        return partition, world, dox_w
+
+    @staticmethod
+    def generate_false(num_worlds):
+
+        partition, world, dox_w, _ = Verb.initialize(num_worlds)
+
+        dox_w[np.random.random(len(dox_w)) < 0.5] = 1
+
+        # if info_q != W, 50% chance of adding non-info worlds in
+        not_info_q = np.where(partition == 0)[0]
+        if len(not_info_q) > 0 and np.random.random() < 0.5:
+            how_many = max(1, np.random.randint(len(not_info_q)))
+            to_add = np.random.choice(not_info_q, [how_many], replace=False)
+            dox_w[to_add] = 1
+
+        # or make w not in dox_w
+        if np.random.random() < 0.5:
+            dox_w[world] = 0
+        # or make empty intersection with some alternative
+        else:
+            random_cell = np.where(partition ==
+                                   partition[np.random.choice(
+                                       np.unique(partition))])[0]
+            dox_w[random_cell] = 0
+
+        if not np.any(dox_w):
+            # make sure dox_w is not empty
+            dox_w[np.random.randint(num_worlds)] = 1
+
+        return partition, world, dox_w
+
+
+class Knopinion(Verb):
+
+    @staticmethod
+    def generate_true(num_worlds):
+
+        partition, world, dox_w, _ = Verb.initialize(num_worlds)
+
+        not_info_q = np.where(partition == 0)[0]
+        if len(not_info_q) > 0:
+            # opinionated: dox_w subset of one of P or ~P
+            cell = np.where(partition ==
+                            partition[np.random.choice(np.unique(partition))])[0]
+            to_add = cell[np.random.random(len(cell)) < 0.5]
+            dox_w[to_add] = 1
+            if not np.any(dox_w):
+                # make sure dox_w is not empty
+                dox_w[np.random.choice(cell)] = 1
+        else:
+            # dox_w subset of Q_w
+            world_cell = np.where(partition == partition[world])[0]
+            to_add = world_cell[np.random.random(len(world_cell)) < 0.5]
+            dox_w[to_add] = 1
+            if not np.any(dox_w):
+                # make sure dox_w is not empty
+                dox_w[np.random.choice(world_cell)] = 1
+
+        return partition, world, dox_w
+
+    @staticmethod
+    def generate_false(num_worlds):
+
+        partition, world, dox_w, is_declarative = Verb.initialize(num_worlds)
+
+        while len(np.unique(partition)) == 1:
+            # impossible for Knopinion to be false of a single-cell partition,
+            # so re-generate until it's not
+            partition = generate_partition(num_worlds, is_declarative)
+
+        # add some not Q_w worlds to dox_w
+        not_world_cell = np.where(partition != partition[world])[0]
+        how_many = max(1, np.random.randint(len(not_world_cell)))
+        dox_w[np.random.choice(not_world_cell, [how_many], replace=False)] = 1
+
+        world_cell = np.where(partition == partition[world])[0]
+        how_many = max(1, np.random.randint(len(world_cell)))
+        if is_declarative:
+            # declarative has to have some world_cell elements
+            how_many = max(1, how_many)
+        dox_w[np.random.choice(world_cell, [how_many], replace=False)] = 1
+
+        return partition, world, dox_w
+
+
 if __name__ == "__main__":
 
     print 'T: ' + str(Know.generate_true(5))
