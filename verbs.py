@@ -29,6 +29,16 @@ def embedding(partition):
 
 
 def partition_as_matrix(partition):
+    """Convert a partition to a matrix.
+
+    Args:
+        partition: 1-D numpy array
+
+    Returns:
+        a [len(partition), len(partition)] size matrix, where rows are one-hot
+        vectors corresponding to the elements of partition, except that 0 gets
+        mapped to the all-zeros vector
+    """
     cells = np.vstack((np.zeros(len(partition)),
                        np.eye(len(partition))))
     return np.array([cells[c] for c in np.nditer(partition)])
@@ -142,7 +152,7 @@ class Verb(object):
 
 
 class Know(Verb):
-    """Verb meaning: \Q \w: dox_w is a subset of info(Q) & w in dox_w
+    """Verb meaning: \Q \w: dox_w is a subset of Q_w & w in dox_w
     """
 
     @staticmethod
@@ -180,9 +190,9 @@ class Know(Verb):
         else:
             # make dox_w not a subset of Q_w; only possible if Q_w != W, whence
             # the check on length in the if clause
-            how_many_outside = np.random.randint(len(not_world_cell))
+            how_many_outside = np.random.randint(len(not_world_cell)) + 1
             to_include = np.random.choice(not_world_cell,
-                                          size=how_many_outside+1,
+                                          size=[how_many_outside],
                                           replace=False)
             dox_w[to_include] = 1
         return partition, world, dox_w
@@ -226,10 +236,10 @@ class Guess(Verb):
         for idx in range(how_many):
             cell = np.where(partition == cell_values[idx])[0]
             to_add = cell[np.random.random(len(cell)) < 0.5]
-            dox_w[to_add] = 1
             # make sure one world from each cell gets added
             if len(to_add) == 0:
-                dox_w[np.random.choice(cell)] = 1
+                to_add = np.random.choice(cell, size=[1])
+            dox_w[to_add] = 1
 
         return partition, world, dox_w
 
@@ -265,10 +275,10 @@ class Wondows(Verb):
             # TODO: refactor this, and its use in Guess.generate_false, out
             cell = np.where(partition == alternatives[idx])[0]
             to_add = cell[np.random.random(len(cell)) < 0.5]
-            dox_w[to_add] = 1
             # make sure one world from each cell gets added
             if len(to_add) == 0:
-                dox_w[np.random.choice(cell)] = 1
+                to_add = np.random.choice(cell, size=[1])
+            dox_w[to_add] = 1
 
         return partition, world, dox_w
 
@@ -281,8 +291,8 @@ class Wondows(Verb):
 
         # if info_q != W, 50% chance of adding non-info worlds in
         not_info_q = np.where(partition == 0)[0]
-        if len(not_info_q) > 0 and np.random.random() < 0.5:
-            how_many = max(1, np.random.randint(len(not_info_q)))
+        if len(not_info_q) > 0: # and np.random.random() < 0.5:
+            how_many = np.random.randint(len(not_info_q)) + 1
             to_add = np.random.choice(not_info_q, [how_many], replace=False)
             dox_w[to_add] = 1
 
@@ -336,11 +346,11 @@ class Knopinion(Verb):
 
         # add some not Q_w worlds to dox_w
         not_world_cell = np.where(partition != partition[world])[0]
-        how_many = max(1, np.random.randint(len(not_world_cell)))
+        how_many = np.random.randint(len(not_world_cell)) + 1
         dox_w[np.random.choice(not_world_cell, [how_many], replace=False)] = 1
 
         world_cell = np.where(partition == partition[world])[0]
-        how_many = max(1, np.random.randint(len(world_cell)))
+        how_many = np.random.randint(len(world_cell))
         if is_declarative:
             # declarative has to have some world_cell elements
             how_many = max(1, how_many)

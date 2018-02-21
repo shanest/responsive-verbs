@@ -4,6 +4,7 @@ import tensorflow as tf
 def basic_ffnn(features, labels, mode, params):
 
     num_verbs = len(params['verbs'])
+    training = mode == tf.estimator.ModeKeys.TRAIN
 
     # -- inputs: [batch_size, item_size]
     inputs = features[params['input_feature']]
@@ -15,6 +16,10 @@ def basic_ffnn(features, labels, mode, params):
         net = tf.layers.dense(net,
                               units=layer['units'],
                               activation=layer['activation'])
+        if layer['dropout']:
+            net = tf.layers.dropout(net,
+                                    rate=layer['dropout'],
+                                    training=training)
         # -- net: [batch_size, params['layers'][-1]['units']]
 
     # -- logits: [batch_size, num_classes]

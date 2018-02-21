@@ -115,18 +115,19 @@ def main_experiment(write_dir='data/'):
 
     eparams = {'num_epochs': 4,
                'batch_size': 16,
-               'num_worlds': 12,
+               'num_worlds': 20,
                'items_per_bin': 12000,
                'tries_per_bin': 50000,
-               'test_bin_size': 2000,
+               'test_bin_size': 4000,
                'eval_steps': 50,
                'stop_loss': 0.02}
 
     hparams = {'verbs': verbs.get_all_verbs(),
                'num_classes': 2,
                'layers': [
-                   {'units': 64,
-                    'activation': tf.nn.relu}]*3,
+                   {'units': 128,
+                    'activation': tf.nn.relu,
+                    'dropout': 0.2}]*3,
                'input_feature': 'x'}
 
     for trial in xrange(1):
