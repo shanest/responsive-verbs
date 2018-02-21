@@ -286,8 +286,7 @@ class Wondows(Verb):
         # or make empty intersection with some alternative
         else:
             random_cell = np.where(partition ==
-                                   partition[np.random.choice(
-                                       np.unique(partition))])[0]
+                                   np.random.choice(np.unique(partition)))[0]
             dox_w[random_cell] = 0
 
         if not np.any(dox_w):
@@ -352,7 +351,5 @@ class Knopinion(Verb):
         return partition, world, dox_w
 
 
-if __name__ == "__main__":
-
-    print 'T: ' + str(Know.generate_true(5))
-    print 'F: ' + str(Know.generate_false(5))
+def get_all_verbs():
+    return globals()['Verb'].__subclasses__()

@@ -63,18 +63,18 @@ class DataGenerator(object):
         return self._prep_dataset(self.test_bins, shuffle)
 
     def _prep_dataset(self, data, shuffle=True):
-        truth_values = np.eye(2)
         all_data = []
 
         for (verb, truth_value) in data:
             verb_label = self.verb_labels[self.verbs.index(verb)]
             all_data.extend([(np.concatenate([point, verb_label]),
-                              truth_values[int(truth_value)])
+                              # note: TF just wants label as integer
+                              int(truth_value))
                              for point in data[(verb, truth_value)]])
 
         if shuffle:
             np.random.shuffle(all_data)
 
-        Xs = [datum[0] for datum in all_data]
-        Ys = [datum[1] for datum in all_data]
+        Xs = np.array([datum[0] for datum in all_data])
+        Ys = np.array([datum[1] for datum in all_data])
         return Xs, Ys
