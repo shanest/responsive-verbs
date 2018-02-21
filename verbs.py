@@ -28,6 +28,12 @@ def embedding(partition):
     return result
 
 
+def partition_as_matrix(partition):
+    cells = np.vstack((np.zeros(len(partition)),
+                       np.eye(len(partition))))
+    return np.array([cells[c] for c in np.nditer(partition)])
+
+
 def partition_from_embedding(embedding):
     """Returns a partition from its embedding.  While embedding() is a
     many->one function, this is one->one.  So, one way of checking whether two

@@ -122,12 +122,11 @@ def main_experiment(write_dir='data/'):
                'eval_steps': 50,
                'stop_loss': 0.02}
 
-    # hparams = {'verbs': verbs.get_all_verbs(),
-    hparams = {'verbs': [verbs.Guess],
+    hparams = {'verbs': verbs.get_all_verbs(),
                'num_classes': 2,
                'layers': [
-                   {'units': 128,
-                    'activation': tf.nn.relu}]*4,
+                   {'units': 64,
+                    'activation': tf.nn.relu}]*3,
                'input_feature': 'x'}
 
     for trial in xrange(1):
