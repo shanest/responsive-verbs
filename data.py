@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 import numpy as np
 import verbs
 
@@ -40,8 +42,8 @@ class DataGenerator(object):
                 tries += 1
 
         # TODO: balance by over/under-sampling here? Or will it not be needed?
-        print 'Generated this many data points:'
-        print {k: len(self.data[k]) for k in self.data}
+        print('Generated this many data points:')
+        print({k: len(self.data[k]) for k in self.data})
         self.test_bins = {k: self.data[k][:self.test_bin_size]
                           for k in self.data}
         self.train_bins = {k: self.data[k][self.test_bin_size:]

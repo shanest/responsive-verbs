@@ -306,23 +306,15 @@ class Knopinion(Verb):
         partition, world, dox_w, _ = Verb.initialize(num_worlds)
 
         not_info_q = np.where(partition == 0)[0]
-        if len(not_info_q) > 0:
-            # opinionated: dox_w subset of one of P or ~P
-            cell = np.where(partition ==
-                            partition[np.random.choice(np.unique(partition))])[0]
-            to_add = cell[np.random.random(len(cell)) < 0.5]
-            dox_w[to_add] = 1
-            if not np.any(dox_w):
-                # make sure dox_w is not empty
-                dox_w[np.random.choice(cell)] = 1
-        else:
-            # dox_w subset of Q_w
-            world_cell = np.where(partition == partition[world])[0]
-            to_add = world_cell[np.random.random(len(world_cell)) < 0.5]
-            dox_w[to_add] = 1
-            if not np.any(dox_w):
-                # make sure dox_w is not empty
-                dox_w[np.random.choice(world_cell)] = 1
+        cell_value = (partition[world] if len(not_info_q) == 0
+                      else np.random.choice(np.unique(partition)))
+
+        cell = np.where(partition == cell_value)[0]
+        to_add = cell[np.random.random(len(cell)) < 0.5]
+        dox_w[to_add] = 1
+        if not np.any(dox_w):
+            # make sure dox_w is not empty
+            dox_w[np.random.choice(cell)] = 1
 
         return partition, world, dox_w
 

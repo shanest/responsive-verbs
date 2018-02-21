@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 import verbs
 import util
 import data
@@ -40,10 +42,10 @@ class EvalEarlyStopHook(tf.train.SessionRunHook):
         if (global_step-1) % self._num_steps == 0:
             ev_results = self._estimator.evaluate(input_fn=self._input_fn)
 
-            print ''
+            print('')
             for key, value in ev_results.items():
                 self._results[key].append(value)
-                print '{}: {}'.format(key, value)
+                print('{}: {}'.format(key, value))
 
             # TODO: add running total accuracy or other complex stop condition?
             if ev_results['loss'] < self._stop_loss:
@@ -99,7 +101,7 @@ def run_trial(eparams, hparams, trial_num,
         batch_size=len(test_x),
         shuffle=False)
 
-    print '\n------ TRIAL {} -----'.format(trial_num)
+    print('\n------ TRIAL {} -----'.format(trial_num))
 
     # train and evaluate model together, using the Hook
     model.train(input_fn=train_input_fn,
@@ -112,19 +114,20 @@ def run_trial(eparams, hparams, trial_num,
 def main_experiment(write_dir='data/'):
 
     eparams = {'num_epochs': 4,
-               'batch_size': 8,
+               'batch_size': 16,
                'num_worlds': 12,
-               'items_per_bin': 10000,
+               'items_per_bin': 12000,
                'tries_per_bin': 50000,
                'test_bin_size': 2000,
                'eval_steps': 50,
                'stop_loss': 0.02}
 
-    hparams = {'verbs': verbs.get_all_verbs(),
+    # hparams = {'verbs': verbs.get_all_verbs(),
+    hparams = {'verbs': [verbs.Guess],
                'num_classes': 2,
                'layers': [
-                   {'units': 20,
-                    'activation': tf.nn.relu}]*2,
+                   {'units': 128,
+                    'activation': tf.nn.relu}]*4,
                'input_feature': 'x'}
 
     for trial in xrange(1):
