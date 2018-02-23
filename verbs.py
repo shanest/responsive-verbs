@@ -63,7 +63,7 @@ def partition_from_embedding(embedding):
     # partition got by 'summing' the rows, since they have no non-zero
     # components in common
     # add 1 to indices to conform to convention about declarative vs question
-    return np.sum(unique*(indices+1), axis=0)
+    return np.sum(unique*(indices+1), axis=0, dtype=np.int_)
 
 
 def generate_partition(num_worlds, is_declarative):
@@ -81,7 +81,10 @@ def generate_partition(num_worlds, is_declarative):
     """
     # TODO: forbid single-cell partitions? or, since they're 1/2^N chance of
     # being generated, just not worry about it?
-    upper_bound = 2 if is_declarative else num_worlds
+    # geometric distribution biases towards small number of cells; play with
+    # parameter 0.2?
+    upper_bound = 2 if is_declarative else min(num_worlds,
+                                               1+np.random.geometric(0.2))
     partition = np.random.choice(np.arange(upper_bound), size=[num_worlds])
     # convention: values are 1...N for inquisitive meanings, 0/1 for
     # declarative meanings; so we shift the whole partition up 1 if this is not
@@ -147,12 +150,12 @@ class Verb(object):
         is_declarative = np.random.random() < 0.5
         partition = generate_partition(num_worlds, is_declarative)
         world = np.random.randint(num_worlds)
-        dox_w = np.zeros([num_worlds])
+        dox_w = np.zeros([num_worlds], dtype=np.int_)
         return partition, world, dox_w, is_declarative
 
 
 class Know(Verb):
-    """Verb meaning: \Q \w: dox_w is a subset of Q_w & w in dox_w
+    """Verb meaning: \Q \w: dox_w is a subset of Q_w
     """
 
     @staticmethod
@@ -169,13 +172,19 @@ class Know(Verb):
         # randomly include worlds from Q_w
         to_add = world_cell[np.random.random(len(world_cell)) < 0.5]
         dox_w[to_add] = 1
-        # but w has to be in dox_w
-        dox_w[world] = 1
+
+        # make sure dox_w not empty
+        if np.sum(dox_w) == 0:
+            dox_w[np.random.choice(world_cell)] = 1
+
         return partition, world, dox_w
 
     @staticmethod
     def generate_false(num_worlds):
 
+        return BeWrong.generate_true(num_worlds)
+
+        """
         partition, world, dox_w, _ = Verb.initialize(num_worlds)
 
         # two ways of being false: w \notin dox_w, or dox_w is not a subset of
@@ -196,52 +205,31 @@ class Know(Verb):
                                           replace=False)
             dox_w[to_include] = 1
         return partition, world, dox_w
+        """
 
 
-class Guess(Verb):
-    """Verb meaning: \Q \w: dox_w is a subset of q for some q in alt(Q)
+class BeWrong(Verb):
+    """Verb meaning: \Q \w: dox_w is not a subset of Q_w
     """
 
     @staticmethod
     def generate_true(num_worlds):
 
-        partition, world, dox_w, _ = Verb.initialize(num_worlds)
+        partition, world, dox_w, is_declarative = Verb.initialize(num_worlds)
 
-        # choose which cell
-        which_cell = np.random.choice(np.unique(partition))
-        cell = np.where(partition == which_cell)[0]
-        to_add = cell[np.random.random(len(cell)) < 0.5]
+        dox_w[np.random.random(len(dox_w)) < 0.5] = 1
+        not_Qw = np.where(partition != partition[world])[0]
+        # get at least one not_Qw world
+        how_many = 1 + np.random.randint(len(not_Qw))
+        to_add = np.random.choice(not_Qw, [how_many], replace=False)
         dox_w[to_add] = 1
-
-        # make sure dox_w is not empty!
-        if np.sum(dox_w) == 0:
-            dox_w[np.random.randint(num_worlds)] = 1
 
         return partition, world, dox_w
 
     @staticmethod
     def generate_false(num_worlds):
 
-        partition, world, dox_w, is_declarative = Verb.initialize(num_worlds)
-
-        while len(np.unique(partition)) == 1:
-            # impossible for Guess to be false of a single-cell partition, so
-            # re-generate until it's not
-            partition = generate_partition(num_worlds, is_declarative)
-
-        unique = np.unique(partition)
-        how_many = max(2, np.random.randint(len(unique)) + 1)
-        # get at least two different cells; note replace=False!
-        cell_values = np.random.choice(unique, [how_many], replace=False)
-        for idx in range(how_many):
-            cell = np.where(partition == cell_values[idx])[0]
-            to_add = cell[np.random.random(len(cell)) < 0.5]
-            # make sure one world from each cell gets added
-            if len(to_add) == 0:
-                to_add = np.random.choice(cell, size=[1])
-            dox_w[to_add] = 1
-
-        return partition, world, dox_w
+        return Know.generate_true(num_worlds)
 
 
 class Wondows(Verb):

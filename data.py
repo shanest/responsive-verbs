@@ -35,7 +35,10 @@ class DataGenerator(object):
                 # convert point to binary vector
                 point = self.generate_point(partition, world, v_w)
                 # make point hashable, so can be added to set
-                hashable = self.point_to_int(point)
+                # TODO: make sure point_to_int is really one-to-one
+                # hashable = self.point_to_int(point)
+                # TODO: FIX UNIQUE PARTITION DETECTION
+                hashable = (tuple(partition), world, tuple(v_w))
                 if hashable not in generated:
                     self.data[(verb, truth_value)].append(point)
                     generated.add(hashable)
@@ -50,7 +53,9 @@ class DataGenerator(object):
                            for k in self.data}
 
     def generate_point(self, partition, world, v_w):
+        partition = verbs.partition_from_embedding(verbs.embedding(partition))
         embedding = verbs.partition_as_matrix(partition)
+        #embedding = verbs.embedding(partition)
         embedding_vec = np.reshape(embedding, -1)
         world_vec = self.one_hots[world]
         return np.concatenate((embedding_vec, world_vec, v_w))
