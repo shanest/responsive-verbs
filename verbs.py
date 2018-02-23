@@ -92,8 +92,8 @@ def generate_partition(num_worlds, is_declarative):
     if not is_declarative:
         partition += 1
     return partition
-
 # TODO: refactor add_from( )
+
 
 class Verb(object):
 
@@ -198,7 +198,7 @@ class BeWrong(Verb):
         dox_w[np.random.random(len(dox_w)) < 0.5] = 1
 
         not_Qw = np.where(partition != partition[world])[0]
-        if np.sum(dox_w[not_Qw]) == 0:
+        if len(not_Qw) > 0 and np.sum(dox_w[not_Qw]) == 0:
             # get at least one not_Qw world
             how_many = 1 + np.random.randint(len(not_Qw))
             to_add = np.random.choice(not_Qw, [how_many], replace=False)
