@@ -93,6 +93,7 @@ def generate_partition(num_worlds, is_declarative):
         partition += 1
     return partition
 
+# TODO: refactor add_from( )
 
 class Verb(object):
 
@@ -184,29 +185,6 @@ class Know(Verb):
 
         return BeWrong.generate_true(num_worlds)
 
-        """
-        partition, world, dox_w, _ = Verb.initialize(num_worlds)
-
-        # two ways of being false: w \notin dox_w, or dox_w is not a subset of
-        # Q_w.  for now, these are weighted equally, but should they be?
-        # also, both are possible, even with the current coin flip, which seems
-        # like a good thing
-        dox_w[np.random.random(len(dox_w)) < 0.5] = 1
-        not_world_cell = np.where(partition != partition[world])[0]
-        if np.random.random() < 0.5 or len(not_world_cell) == 0:
-            # make w not in dox_w
-            dox_w[world] = 0
-        else:
-            # make dox_w not a subset of Q_w; only possible if Q_w != W, whence
-            # the check on length in the if clause
-            how_many_outside = np.random.randint(len(not_world_cell)) + 1
-            to_include = np.random.choice(not_world_cell,
-                                          size=[how_many_outside],
-                                          replace=False)
-            dox_w[to_include] = 1
-        return partition, world, dox_w
-        """
-
 
 class BeWrong(Verb):
     """Verb meaning: \Q \w: dox_w is not a subset of Q_w
@@ -218,11 +196,13 @@ class BeWrong(Verb):
         partition, world, dox_w, is_declarative = Verb.initialize(num_worlds)
 
         dox_w[np.random.random(len(dox_w)) < 0.5] = 1
+
         not_Qw = np.where(partition != partition[world])[0]
-        # get at least one not_Qw world
-        how_many = 1 + np.random.randint(len(not_Qw))
-        to_add = np.random.choice(not_Qw, [how_many], replace=False)
-        dox_w[to_add] = 1
+        if np.sum(dox_w[not_Qw]) == 0:
+            # get at least one not_Qw world
+            how_many = 1 + np.random.randint(len(not_Qw))
+            to_add = np.random.choice(not_Qw, [how_many], replace=False)
+            dox_w[to_add] = 1
 
         return partition, world, dox_w
 
@@ -233,8 +213,8 @@ class BeWrong(Verb):
 
 
 class Wondows(Verb):
-    """Verb meaning: \Q \w: dox_w is a subset of info(Q) & w in dox_w & for
-    every p in alt(Q), dox_w intersection p is not empty
+    """Verb meaning: \Q \w: dox_w is a subset of info(Q) &
+    for every p in alt(Q), dox_w intersection p is not empty
     """
 
     @staticmethod
@@ -248,25 +228,17 @@ class Wondows(Verb):
 
         # 1. dox_w is a subset of info(Q)
         info_q = np.nonzero(partition)[0]
+        # to_add can be empty, since w in dox_w ensures not-empty
         to_add = info_q[np.random.random(len(info_q)) < 0.5]
         dox_w[to_add] = 1
-        if len(to_add) == 0:
-            dox_w[np.random.choice(info_q)] = 1
-
-        # 2. w in dox_w
-        dox_w[world] = 1
 
         # 3. non-empty intersection with every q in alt(Q)
         cells = np.unique(partition)
         alternatives = cells[np.nonzero(cells)]
         for idx in range(len(alternatives)):
-            # TODO: refactor this, and its use in Guess.generate_false, out
             cell = np.where(partition == alternatives[idx])[0]
-            to_add = cell[np.random.random(len(cell)) < 0.5]
-            # make sure one world from each cell gets added
-            if len(to_add) == 0:
-                to_add = np.random.choice(cell, size=[1])
-            dox_w[to_add] = 1
+            how_many = 1 + np.random.randint(len(cell))
+            dox_w[np.random.choice(cell, [how_many], replace=False)] = 1
 
         return partition, world, dox_w
 
@@ -279,23 +251,28 @@ class Wondows(Verb):
 
         # if info_q != W, 50% chance of adding non-info worlds in
         not_info_q = np.where(partition == 0)[0]
-        if len(not_info_q) > 0: # and np.random.random() < 0.5:
-            how_many = np.random.randint(len(not_info_q)) + 1
-            to_add = np.random.choice(not_info_q, [how_many], replace=False)
-            dox_w[to_add] = 1
 
-        # or make w not in dox_w
-        if np.random.random() < 0.5:
-            dox_w[world] = 0
-        # or make empty intersection with some alternative
-        else:
-            random_cell = np.where(partition ==
-                                   np.random.choice(np.unique(partition)))[0]
-            dox_w[random_cell] = 0
+        cell_values = np.unique(partition)
 
-        if not np.any(dox_w):
-            # make sure dox_w is not empty
-            dox_w[np.random.randint(num_worlds)] = 1
+        def is_false(dox_w):
+            if np.sum(dox_w[not_info_q] > 0):
+                return True
+            for cell in np.nditer(cell_values):
+                if np.sum(dox_w[np.where(partition == cell)[0]]) == 0:
+                    return True
+            return False
+
+        while not is_false(dox_w):
+            if len(not_info_q) > 0 and np.random.random() < 0.5:
+                # add some non-info worlds
+                how_many = np.random.randint(len(not_info_q)) + 1
+                to_add = np.random.choice(not_info_q, [how_many], replace=False)
+                dox_w[to_add] = 1
+            else:
+                # or make empty intersection with some alternative
+                random_cell = np.where(partition ==
+                                       np.random.choice(np.unique(partition)))[0]
+                dox_w[random_cell] = 0
 
         return partition, world, dox_w
 
@@ -314,11 +291,9 @@ class Knopinion(Verb):
                       else np.random.choice(np.unique(partition)))
 
         cell = np.where(partition == cell_value)[0]
-        to_add = cell[np.random.random(len(cell)) < 0.5]
-        dox_w[to_add] = 1
-        if not np.any(dox_w):
-            # make sure dox_w is not empty
-            dox_w[np.random.choice(cell)] = 1
+        # add at least 1 element of cell to dox_w
+        how_many = 1 + np.random.randint(len(cell))
+        dox_w[np.random.choice(cell, [how_many], replace=False)] = 1
 
         return partition, world, dox_w
 
@@ -327,6 +302,8 @@ class Knopinion(Verb):
 
         partition, world, dox_w, is_declarative = Verb.initialize(num_worlds)
 
+        dox_w[np.random.random(len(dox_w)) < 0.5] = 1
+
         while len(np.unique(partition)) == 1:
             # impossible for Knopinion to be false of a single-cell partition,
             # so re-generate until it's not
@@ -334,15 +311,15 @@ class Knopinion(Verb):
 
         # add some not Q_w worlds to dox_w
         not_world_cell = np.where(partition != partition[world])[0]
-        how_many = np.random.randint(len(not_world_cell)) + 1
-        dox_w[np.random.choice(not_world_cell, [how_many], replace=False)] = 1
+        if np.sum(dox_w[not_world_cell]) == 0:
+            how_many = 1 + np.random.randint(len(not_world_cell))
+            dox_w[np.random.choice(not_world_cell, [how_many], replace=False)] = 1
 
         world_cell = np.where(partition == partition[world])[0]
-        how_many = np.random.randint(len(world_cell))
-        if is_declarative:
+        if is_declarative and np.sum(dox_w[world_cell]) == 0:
             # declarative has to have some world_cell elements
-            how_many = max(1, how_many)
-        dox_w[np.random.choice(world_cell, [how_many], replace=False)] = 1
+            how_many = 1 + np.random.randint(len(world_cell))
+            dox_w[np.random.choice(world_cell, [how_many], replace=False)] = 1
 
         return partition, world, dox_w
 
