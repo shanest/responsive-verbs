@@ -130,7 +130,7 @@ def main_experiment(write_dir='data/'):
                     'dropout': 0.1}]*4,
                'input_feature': 'x'}
 
-    for trial in xrange(1):
+    for trial in xrange(30):
         run_trial(eparams, hparams, trial, write_dir)
 
 
