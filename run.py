@@ -135,4 +135,4 @@ def main_experiment(write_dir='data/'):
 
 
 if __name__ == '__main__':
-    main_experiment('/tmp/')
+    main_experiment()
