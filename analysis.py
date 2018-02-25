@@ -1,5 +1,5 @@
 """
-Copyright (C) 2017 Shane Steinert-Threlkeld
+Copyright (C) 2018 Shane Steinert-Threlkeld
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -35,25 +35,33 @@ def experiment_analysis(path, verbs, trials=range(30), plots=True):
         plots: whether to make plots or not
     """
 
+    threshold = 0.9
     # read the data in
     data = util.read_trials_from_csv(path, trials)
     # FILTER OUT TRIALS WHERE RNN DID NOT LEARN
-    remove_bad_trials(data)
+    remove_bad_trials(data, threshold=threshold)
     # get convergence points per quantifier
-    threshold = 0.935
     convergence_points = get_convergence_points(data, verbs, threshold)
+    # TODO: no convergence points for this experiment? just final?
+    # TODO: mean over last N=20 training steps?
+    final_n = 20
+    final_points = {verb: [(sum(data[trial][verb.__name__ +
+                                            '_accuracy'].values[-final_n:])
+                            / final_n)
+                           for trial in data]
+                    for verb in verbs}
 
     if plots:
         # make plots
         make_boxplots(convergence_points, verbs)
         # make_barplots(convergence_points, verbs)
-        make_plot(data, verbs, ylim=(0.8, 1), threshold=threshold)
+        make_plot(data, verbs, ylim=(0.8, 0.975), threshold=threshold)
 
     pairs = list(it.combinations(verbs, 2))
     for pair in pairs:
         print('{} vs. {}'.format(pair[0].__name__, pair[1].__name__))
-        print(stats.ttest_rel(convergence_points[pair[0]],
-                              convergence_points[pair[1]]))
+        print(stats.ttest_rel(final_points[pair[0]],
+                              final_points[pair[1]]))
 
 
 def remove_bad_trials(data, threshold=0.95):
@@ -211,9 +219,11 @@ def make_plot(data, verbs, ylim=None, threshold=0.925):
                  label=verbs[idx].__name__,
                  linewidth=2)
 
+    """
     max_x = max([len(ls) for ls in medians_by_verb])
     plt.plot(longest_x, [threshold for _ in range(max_x)],
              linestyle='dashed', color='green')
+    """
 
     if ylim:
         plt.ylim(ylim)
