@@ -44,7 +44,6 @@ class DataGenerator(object):
                     generated.add(hashable)
                 tries += 1
 
-        # TODO: balance by over/under-sampling here? Or will it not be needed?
         print('Generated this many data points:')
         print({k: len(self.data[k]) for k in self.data})
         self.test_bins = {k: self.data[k][:self.test_bin_size]
@@ -53,9 +52,7 @@ class DataGenerator(object):
                            for k in self.data}
 
     def generate_point(self, partition, world, v_w):
-        partition = verbs.partition_from_embedding(verbs.embedding(partition))
-        embedding = verbs.partition_as_matrix(partition)
-        # embedding = verbs.embedding(partition)
+        embedding = verbs.embedding(partition)
         embedding_vec = np.reshape(embedding, -1)
         world_vec = self.one_hots[world]
         return np.concatenate((embedding_vec, world_vec, v_w))

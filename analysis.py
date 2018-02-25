@@ -23,7 +23,8 @@ import util
 import verbs
 
 
-COLORS = ['xkcd:sea green', 'xkcd:pale green', 'xkcd:salmon', 'xkcd:peach']
+COLORS = ['xkcd:sea green', 'xkcd:pale green',
+          'xkcd:light orange', 'xkcd:peach']
 
 
 def experiment_analysis(path, verbs, trials=range(30), plots=True):
@@ -39,16 +40,20 @@ def experiment_analysis(path, verbs, trials=range(30), plots=True):
     # FILTER OUT TRIALS WHERE RNN DID NOT LEARN
     remove_bad_trials(data)
     # get convergence points per quantifier
-    convergence_points = get_convergence_points(data, verbs, 0.925)
+    threshold = 0.935
+    convergence_points = get_convergence_points(data, verbs, threshold)
 
     if plots:
         # make plots
         make_boxplots(convergence_points, verbs)
-        #make_barplots(convergence_points, verbs)
-        make_plot(data, verbs, ylim=(0.8, 1))
+        # make_barplots(convergence_points, verbs)
+        make_plot(data, verbs, ylim=(0.8, 1), threshold=threshold)
 
-    #print stats.ttest_rel(convergence_points[quants[0]],
-                          #convergence_points[quants[1]])
+    pairs = list(it.combinations(verbs, 2))
+    for pair in pairs:
+        print('{} vs. {}'.format(pair[0].__name__, pair[1].__name__))
+        print(stats.ttest_rel(convergence_points[pair[0]],
+                              convergence_points[pair[1]]))
 
 
 def remove_bad_trials(data, threshold=0.95):
@@ -104,7 +109,7 @@ def diff(ls1, ls2):
     return [ls1[i] - ls2[i] for i in range(len(ls1))]
 
 
-def forward_means(arr, window_size=250):
+def forward_means(arr, window_size=100):
     """Get the forward means of a list. The forward mean at index i is
     the sum of all the elements from i until i+window_size, divided
     by the number of such elements. If there are not window_size elements
@@ -136,6 +141,7 @@ def first_above_threshold(arr, threshold):
     means = forward_means(arr)
     for idx in range(len(arr)):
         if arr[idx] > threshold and means[idx] > threshold:
+        # if means[idx] > threshold:
             return idx
     return None
 
@@ -173,7 +179,7 @@ def get_max_steps(data):
     return max_val
 
 
-def make_plot(data, verbs, ylim=None, threshold=0.95):
+def make_plot(data, verbs, ylim=None, threshold=0.925):
     """Makes a line plot of the accuracy of trials by quantifier, color coded,
     and with the medians also plotted.
 

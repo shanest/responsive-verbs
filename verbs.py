@@ -198,7 +198,11 @@ class BeWrong(Verb):
         dox_w[np.random.random(len(dox_w)) < 0.5] = 1
 
         not_Qw = np.where(partition != partition[world])[0]
-        if len(not_Qw) > 0 and np.sum(dox_w[not_Qw]) == 0:
+        while len(not_Qw) == 0:
+            partition = generate_partition(num_worlds, is_declarative)
+            not_Qw = np.where(partition != partition[world])[0]
+
+        if np.sum(dox_w[not_Qw]) == 0:
             # get at least one not_Qw world
             how_many = 1 + np.random.randint(len(not_Qw))
             to_add = np.random.choice(not_Qw, [how_many], replace=False)
@@ -273,8 +277,7 @@ class Opiknow(Verb):
             partition[world] = 1
 
         cell_values = np.unique(partition[np.nonzero(partition)])
-        cell_value = np.random.choice(cell_values)
-        cell = np.where(partition == cell_value)[0]
+        cell = np.where(partition == np.random.choice(cell_values))[0]
         # add at least 1 element of cell to dox_w
         how_many = 1 + np.random.randint(len(cell))
         dox_w[np.random.choice(cell, [how_many], replace=False)] = 1
@@ -292,7 +295,7 @@ class Opiknow(Verb):
             return partition, world, dox_w
 
         while len(np.unique(partition)) == 1:
-            # impossible for Knopinion to be false of a single-cell partition,
+            # impossible for Opiknow to be false of a single-cell partition,
             # so re-generate until it's not
             partition = generate_partition(num_worlds, is_declarative)
 
