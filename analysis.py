@@ -35,7 +35,7 @@ def experiment_analysis(path, verbs, trials=range(30), plots=True):
         plots: whether to make plots or not
     """
 
-    threshold = 0.9
+    threshold = 0.89
     # read the data in
     data = util.read_trials_from_csv(path, trials)
     # FILTER OUT TRIALS WHERE RNN DID NOT LEARN
