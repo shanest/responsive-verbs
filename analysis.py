@@ -23,7 +23,7 @@ import util
 import verbs
 
 
-COLORS = ['xkcd:sea green', 'xkcd:pale green',
+COLORS = ['xkcd:sea green', 'xkcd:blue green',
           'xkcd:light orange', 'xkcd:peach']
 
 
