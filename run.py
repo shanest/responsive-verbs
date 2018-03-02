@@ -15,13 +15,14 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>
 """
 from __future__ import print_function
+from collections import defaultdict
+import argparse
 
 import verbs
 import util
 import data
 from models import basic_ffnn
 
-from collections import defaultdict
 import tensorflow as tf
 
 
@@ -151,4 +152,10 @@ def main_experiment(write_dir='data/'):
 
 
 if __name__ == '__main__':
-    main_experiment()
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--out_path', help='path to output', type=str,
+                        default='data/')
+    args = parser.parse_args()
+
+    main_experiment(args.out_path)
