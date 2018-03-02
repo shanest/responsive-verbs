@@ -129,8 +129,8 @@ def run_trial(eparams, hparams, trial_num,
 # DEFINE AN EXPERIMENT
 def main_experiment(write_dir='data/'):
 
-    eparams = {'num_epochs': 5,
-               'batch_size': 16,
+    eparams = {'num_epochs': 12,
+               'batch_size': 64,
                'num_worlds': 16,
                'items_per_bin': 12000,
                'tries_per_bin': 50000,
@@ -142,7 +142,7 @@ def main_experiment(write_dir='data/'):
                'num_classes': 2,
                'layers': [
                    {'units': 128,
-                    'activation': tf.nn.relu,
+                    'activation': tf.nn.elu,
                     'dropout': 0.1}]*4,
                'input_feature': 'x'}
 
