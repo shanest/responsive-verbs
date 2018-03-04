@@ -35,7 +35,7 @@ def experiment_analysis(path, verbs, trials=range(30), plots=True):
         plots: whether to make plots or not
     """
 
-    threshold = 0.89
+    threshold = 0.93
     # read the data in
     data = util.read_trials_from_csv(path, trials)
     # FILTER OUT TRIALS WHERE RNN DID NOT LEARN
@@ -54,6 +54,7 @@ def experiment_analysis(path, verbs, trials=range(30), plots=True):
     if plots:
         # make plots
         make_boxplots(convergence_points, verbs)
+        make_boxplots(final_points, verbs)
         # make_barplots(convergence_points, verbs)
         make_plot(data, verbs, ylim=(0.8, 0.975), threshold=threshold)
 
@@ -62,6 +63,8 @@ def experiment_analysis(path, verbs, trials=range(30), plots=True):
         print('{} vs. {}'.format(pair[0].__name__, pair[1].__name__))
         print(stats.ttest_rel(final_points[pair[0]],
                               final_points[pair[1]]))
+        print(stats.ttest_rel(convergence_points[pair[0]],
+                              convergence_points[pair[1]]))
 
 
 def remove_bad_trials(data, threshold=0.95):
@@ -214,16 +217,14 @@ def make_plot(data, verbs, ylim=None, threshold=0.925):
     longest_x = get_max_steps(data)
     for idx in range(len(verbs)):
         plt.plot(longest_x,
-                 smooth_data(medians_by_verb[idx]),
+                 medians_by_verb[idx],
                  COLORS[idx],
                  label=verbs[idx].__name__,
                  linewidth=2)
 
-    """
     max_x = max([len(ls) for ls in medians_by_verb])
     plt.plot(longest_x, [threshold for _ in range(max_x)],
-             linestyle='dashed', color='green')
-    """
+             linestyle='dashed', color='grey', alpha=0.5)
 
     if ylim:
         plt.ylim(ylim)
@@ -253,15 +254,15 @@ def get_median_diff_lengths(trials):
     return np.nanmedian(trials, axis=0)
 
 
-def make_boxplots(convergence_points, quants):
+def make_boxplots(convergence_points, verbs):
     """Makes box plots of some data.
 
     Args:
         convergence_points: dictionary of quantifier convergence points
         quants: names of quantifiers
     """
-    plt.boxplot([convergence_points[quant] for quant in quants])
-    plt.xticks(range(1, len(quants)+1), quants)
+    plt.boxplot([convergence_points[verb] for verb in verbs])
+    plt.xticks(range(1, len(verbs)+1), [verb.__name__ for verb in verbs])
     plt.show()
 
 
@@ -299,7 +300,7 @@ def make_barplots(convergence_points, quants):
     plt.show()
 
 
-def smooth_data(data, smooth_weight=0.9):
+def smooth_data(data, smooth_weight=0.85):
     """Smooths out a series of data which might otherwise be choppy.
 
     Args:
