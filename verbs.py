@@ -199,16 +199,6 @@ class Know(Verb):
     @staticmethod
     def generate_false(num_worlds):
 
-        return BeWrong.generate_true(num_worlds)
-
-
-class BeWrong(Verb):
-    """Verb meaning: \Q \w: dox_w is not a subset of Q_w
-    """
-
-    @staticmethod
-    def generate_true(num_worlds):
-
         partition, world, dox_w, is_declarative = Verb.initialize(num_worlds)
 
         dox_w[np.random.random(len(dox_w)) < 0.5] = 1
@@ -226,10 +216,41 @@ class BeWrong(Verb):
 
         return partition, world, dox_w
 
+
+class BeWrong(Verb):
+    """Verb meaning: \Q \w: dox_w is a subset of Q_v for some v != w
+    """
+
+    @staticmethod
+    def generate_true(num_worlds):
+
+        partition, world, dox_w, is_declarative = Verb.initialize(num_worlds)
+
+        # get Q_v for some v != w
+        notW_cells = np.unique(partition[partition != partition[world]])
+        while len(notW_cells) == 0:
+            partition = generate_partition(num_worlds, is_declarative)
+            notW_cells = np.unique(partition[partition != partition[world]])
+
+        cell = np.where(partition == np.random.choice(notW_cells))[0]
+        # add at least 1 element of cell to dox_w
+        how_many = 1 + np.random.randint(len(cell))
+        dox_w[np.random.choice(cell, [how_many], replace=False)] = 1
+
+        return partition, world, dox_w
+
     @staticmethod
     def generate_false(num_worlds):
 
-        return Know.generate_true(num_worlds)
+        partition, world, dox_w, is_declarative = Verb.initialize(num_worlds)
+
+        while (np.sum(dox_w) == 0 or
+               (len(np.unique(partition[np.nonzero(dox_w)[0]])) == 1 and
+                np.unique(partition[np.nonzero(dox_w[0])]) !=
+                np.array([world]))):
+            dox_w[np.random.random(len(dox_w)) < 0.5] = 1
+
+        return partition, world, dox_w
 
 
 class Knopinion(Verb):
