@@ -217,8 +217,8 @@ class Know(Verb):
         return partition, world, dox_w
 
 
-class BeWrong(Verb):
-    """Verb meaning: \Q \w: dox_w is a subset of Q_v for some v != w
+class BeCertain(Verb):
+    """Verb meaning: \Q \w: dox_w is a subset of Q_w for some w
     """
 
     @staticmethod
@@ -226,13 +226,7 @@ class BeWrong(Verb):
 
         partition, world, dox_w, is_declarative = Verb.initialize(num_worlds)
 
-        # get Q_v for some v != w
-        notW_cells = np.unique(partition[partition != partition[world]])
-        while len(notW_cells) == 0:
-            partition = generate_partition(num_worlds, is_declarative)
-            notW_cells = np.unique(partition[partition != partition[world]])
-
-        cell = np.where(partition == np.random.choice(notW_cells))[0]
+        cell = np.where(partition == np.random.choice(np.unique(partition)))[0]
         # add at least 1 element of cell to dox_w
         how_many = 1 + np.random.randint(len(cell))
         dox_w[np.random.choice(cell, [how_many], replace=False)] = 1
@@ -244,10 +238,12 @@ class BeWrong(Verb):
 
         partition, world, dox_w, is_declarative = Verb.initialize(num_worlds)
 
-        while (np.sum(dox_w) == 0 or
-               (len(np.unique(partition[np.nonzero(dox_w)[0]])) == 1 and
-                np.unique(partition[np.nonzero(dox_w[0])]) !=
-                np.array([world]))):
+        while len(np.unique(partition)) == 1:
+            # impossible for Opiknow to be false of a single-cell partition,
+            # so re-generate until it's not
+            partition = generate_partition(num_worlds, is_declarative)
+
+        while len(np.unique(partition[np.nonzero(dox_w)[0]])) < 2:
             dox_w = np.random.choice([0, 1], [num_worlds])
 
         return partition, world, dox_w
@@ -328,19 +324,15 @@ class Opiknow(Verb):
 
         dox_w[np.random.random(len(dox_w)) < 0.5] = 1
 
-        if partition[world] == 0:
-            return partition, world, dox_w
+        if is_declarative:
+            partition[world] = 1
 
         while len(np.unique(partition)) == 1:
             # impossible for Opiknow to be false of a single-cell partition,
             # so re-generate until it's not
             partition = generate_partition(num_worlds, is_declarative)
 
-        def num_cells(dox_w, partition):
-            indices = np.nonzero(dox_w)[0]
-            return len(np.unique(partition[indices]))
-
-        while num_cells(dox_w, partition) < 2:
+        while len(np.unique(partition[np.nonzero(dox_w)[0]])) < 2:
             dox_w = np.random.choice([0, 1], [num_worlds])
 
         return partition, world, dox_w

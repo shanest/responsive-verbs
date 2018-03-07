@@ -14,8 +14,20 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>
 """
+from __future__ import division
 
 import tensorflow as tf
+
+
+def F1_metric(labels, predictions):
+
+    precision_scalar, precision_update = tf.metrics.precision(
+        labels=labels, predictions=predictions)
+    recall_scalar, recall_update = tf.metrics.recall(
+        labels=labels, predictions=predictions)
+    F1_scalar = 2*(precision_scalar * recall_scalar) / (precision_scalar +
+                                                        recall_scalar)
+    return F1_scalar, tf.group(precision_update, recall_update)
 
 
 def basic_ffnn(features, labels, mode, params):
@@ -79,9 +91,12 @@ def basic_ffnn(features, labels, mode, params):
         labels, verb_indices, num_verbs)
     for idx in xrange(num_verbs):
         # TODO: loss by verb as well?
-        key = '{}_accuracy'.format(params['verbs'][idx].__name__)
-        metrics[key] = tf.metrics.accuracy(labels=label_by_verb[idx],
-                                           predictions=prediction_by_verb[idx])
+        acc_key = '{}_accuracy'.format(params['verbs'][idx].__name__)
+        metrics[acc_key] = tf.metrics.accuracy(labels=label_by_verb[idx],
+                                               predictions=prediction_by_verb[idx])
+        F1_key = '{}_F1'.format(params['verbs'][idx].__name__)
+        metrics[F1_key] = F1_metric(labels=label_by_verb[idx],
+                                    predictions=prediction_by_verb[idx])
 
     return tf.estimator.EstimatorSpec(mode,
                                       loss=loss,

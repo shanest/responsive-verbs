@@ -131,10 +131,10 @@ def run_trial(eparams, hparams, trial_num,
 def main_experiment(write_dir='data/'):
 
     eparams = {'num_epochs': 12,
-               'batch_size': 64,
+               'batch_size': 128,
                'num_worlds': 16,
-               'items_per_bin': 12000,
-               'tries_per_bin': 50000,
+               'items_per_bin': 16000,
+               'tries_per_bin': 60000,
                'test_bin_size': 4000,
                'eval_steps': 50,
                'stop_loss': 0.02}
