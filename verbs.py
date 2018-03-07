@@ -248,7 +248,7 @@ class BeWrong(Verb):
                (len(np.unique(partition[np.nonzero(dox_w)[0]])) == 1 and
                 np.unique(partition[np.nonzero(dox_w[0])]) !=
                 np.array([world]))):
-            dox_w[np.random.random(len(dox_w)) < 0.5] = 1
+            dox_w = np.random.choice([0, 1], [num_worlds])
 
         return partition, world, dox_w
 
