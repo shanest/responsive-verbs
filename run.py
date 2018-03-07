@@ -132,7 +132,7 @@ def main_experiment(write_dir='data/'):
 
     eparams = {'num_epochs': 12,
                'batch_size': 128,
-               'num_worlds': 16,
+               'num_worlds': 20,
                'items_per_bin': 16000,
                'tries_per_bin': 60000,
                'test_bin_size': 4000,
