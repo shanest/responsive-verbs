@@ -228,18 +228,6 @@ class Know(Verb):
 
         return veridical and dox_sub_w
 
-    @staticmethod
-    def generate_false(num_worlds):
-
-        partition, world, dox_w, is_declarative = Verb.initialize(
-            num_worlds, dox_random=True)
-
-        while Know.verify_true(partition, world, dox_w, is_declarative):
-            partition, world, dox_w, is_declarative = Verb.initialize(
-                num_worlds, dox_random=True)
-
-        return partition, world, dox_w
-
 
 class BeCertain(Verb):
     """Verb meaning: \Q \w: dox_w is a subset of Q_w for some w
@@ -269,18 +257,6 @@ class BeCertain(Verb):
         falsely = not ((partition == partition[world]) * dox_w).any()
 
         return opinionated and falsely
-
-    @staticmethod
-    def generate_false(num_worlds):
-
-        partition, world, dox_w, is_declarative = Verb.initialize(
-            num_worlds, dox_random=True)
-
-        while BeCertain.verify_true(partition, world, dox_w, is_declarative):
-            partition, world, dox_w, is_declarative = Verb.initialize(
-                num_worlds, dox_random=True)
-
-        return partition, world, dox_w
 
 
 class Knopinion(Verb):
@@ -314,18 +290,6 @@ class Knopinion(Verb):
         dox_sub_negq = np.in1d(dox_cell, not_info_q).all()
 
         return dox_sub_w or dox_sub_negq
-
-    @staticmethod
-    def generate_false(num_worlds):
-
-        partition, world, dox_w, is_declarative = Verb.initialize(
-            num_worlds, dox_random=True)
-
-        while Knopinion.verify_true(partition, world, dox_w, is_declarative):
-            partition, world, dox_w, is_declarative = Verb.initialize(
-                num_worlds, dox_random=True)
-
-        return partition, world, dox_w
 
 
 class Wondows(Verb):
@@ -370,18 +334,6 @@ class Wondows(Verb):
             np.unique(partition[np.nonzero(dox_w)]))
 
         return fw_not_empty and in_info_q and intersect_every_cell
-
-    @staticmethod
-    def generate_false(num_worlds):
-
-        partition, world, dox_w, is_declarative = Verb.initialize(
-            num_worlds, dox_random=True)
-
-        while Wondows.verify_true(partition, world, dox_w, is_declarative):
-            partition, world, dox_w, is_declarative = Verb.initialize(
-                num_worlds, dox_random=True)
-
-        return partition, world, dox_w
 
 
 def get_all_verbs():
