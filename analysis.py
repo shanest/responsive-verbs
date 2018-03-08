@@ -19,6 +19,9 @@ import itertools as it
 import numpy as np
 import scipy.stats as stats
 from matplotlib import pyplot as plt
+from mpl_toolkits.axes_grid1.inset_locator import zoomed_inset_axes
+from mpl_toolkits.axes_grid1.inset_locator import mark_inset
+
 import util
 import verbs
 
@@ -56,8 +59,10 @@ def experiment_analysis(path, verbs, trials=range(30), plots=True):
         make_boxplots(convergence_points, verbs)
         make_boxplots(final_points, verbs)
         # make_barplots(convergence_points, verbs)
-        make_plot(data, verbs, ylim=(0.8, 0.975), threshold=None)
-        make_plot(data, verbs, xmin=6000, ylim=(0.9, 0.975), threshold=None)
+        make_plot(data, verbs, ylim=(0.8, 0.97), threshold=None,
+                  inset={'zoom': 2.5,
+                         'xlim': (7000, 9000),
+                         'ylim': (0.93, 0.95)})
 
     pairs = list(it.combinations(verbs, 2))
     for pair in pairs:
@@ -191,7 +196,8 @@ def get_max_steps(data):
     return max_val
 
 
-def make_plot(data, verbs, ylim=None, xmin=None, threshold=None):
+def make_plot(data, verbs, ylim=None, xlim=None, threshold=None, loc=2,
+              inset=None):
     """Makes a line plot of the accuracy of trials by quantifier, color coded,
     and with the medians also plotted.
 
@@ -202,13 +208,15 @@ def make_plot(data, verbs, ylim=None, xmin=None, threshold=None):
     """
     assert len(verbs) <= len(COLORS)
 
+    fig, ax = plt.subplots()
+
     trials_by_verb = [[] for _ in range(len(verbs))]
-    for trial in data.keys():
+    for trial in data:
         steps = data[trial]['global_step'].values
         for idx in range(len(verbs)):
             trials_by_verb[idx].append(smooth_data(
                 data[trial][verbs[idx].__name__ + '_accuracy'].values))
-            plt.plot(steps, trials_by_verb[idx][-1],
+            ax.plot(steps, trials_by_verb[idx][-1],
                      COLORS[idx], alpha=0.25)
 
     # plot median lines
@@ -217,25 +225,47 @@ def make_plot(data, verbs, ylim=None, xmin=None, threshold=None):
     # get x-axis of longest trial
     longest_x = get_max_steps(data)
     for idx in range(len(verbs)):
-        plt.plot(longest_x,
-                 medians_by_verb[idx],
-                 COLORS[idx],
-                 label=verbs[idx].__name__,
-                 linewidth=2.5)
+        ax.plot(longest_x,
+                medians_by_verb[idx],
+                COLORS[idx],
+                label=verbs[idx].__name__,
+                linewidth=2.5)
 
     if threshold:
         max_x = max([len(ls) for ls in medians_by_verb])
-        plt.plot(longest_x, [threshold for _ in range(max_x)],
-                 linestyle='dashed', color='grey', alpha=0.5)
+        ax.plot(longest_x, [threshold for _ in range(max_x)],
+                linestyle='dashed', color='grey', alpha=0.5)
 
     if ylim:
-        plt.ylim(ylim)
+        ax.set_ylim(ylim)
 
-    if xmin:
-        _, xmax = plt.xlim()
-        plt.xlim((xmin, xmax))
+    if xlim:
+        # _, xmax = plt.xlim()
+        ax.set_xlim(xlim)
 
-    plt.legend(loc=4)
+    if loc:
+        ax.legend(loc=loc)
+
+    if inset:
+        axins = zoomed_inset_axes(ax, inset['zoom'], loc=4)
+        for trial in data:
+            steps = data[trial]['global_step'].values
+            for idx in range(len(verbs)):
+                axins.plot(steps, trials_by_verb[idx][trial],
+                           COLORS[idx], alpha=0.25)
+        for idx in range(len(verbs)):
+            axins.plot(longest_x,
+                     medians_by_verb[idx],
+                     COLORS[idx],
+                     label=verbs[idx].__name__,
+                     linewidth=2.5)
+        axins.set_xlim(inset['xlim'])
+        axins.set_ylim(inset['ylim'])
+        axins.set_xticks([])
+        axins.set_yticks([])
+
+    mark_inset(ax, axins, loc1=1, loc2=2, fc="none", ec="0.5")
+
     plt.tight_layout()
     plt.show()
 
