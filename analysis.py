@@ -35,7 +35,7 @@ def experiment_analysis(path, verbs, trials=range(30), plots=True):
         plots: whether to make plots or not
     """
 
-    threshold = 0.93
+    threshold = 0.91
     # read the data in
     data = util.read_trials_from_csv(path, trials)
     # FILTER OUT TRIALS WHERE RNN DID NOT LEARN
@@ -44,7 +44,7 @@ def experiment_analysis(path, verbs, trials=range(30), plots=True):
     convergence_points = get_convergence_points(data, verbs, threshold)
     # TODO: no convergence points for this experiment? just final?
     # TODO: mean over last N=20 training steps?
-    final_n = 20
+    final_n = 100
     final_points = {verb: [(sum(data[trial][verb.__name__ +
                                             '_accuracy'].values[-final_n:])
                             / final_n)
@@ -56,7 +56,7 @@ def experiment_analysis(path, verbs, trials=range(30), plots=True):
         make_boxplots(convergence_points, verbs)
         make_boxplots(final_points, verbs)
         # make_barplots(convergence_points, verbs)
-        make_plot(data, verbs, ylim=(0.8, 0.975), threshold=threshold)
+        make_plot(data, verbs, ylim=(0.8, 0.975), threshold=None)
 
     pairs = list(it.combinations(verbs, 2))
     for pair in pairs:
@@ -190,7 +190,7 @@ def get_max_steps(data):
     return max_val
 
 
-def make_plot(data, verbs, ylim=None, threshold=0.925):
+def make_plot(data, verbs, ylim=None, threshold=None):
     """Makes a line plot of the accuracy of trials by quantifier, color coded,
     and with the medians also plotted.
 
@@ -208,7 +208,7 @@ def make_plot(data, verbs, ylim=None, threshold=0.925):
             trials_by_verb[idx].append(smooth_data(
                 data[trial][verbs[idx].__name__ + '_accuracy'].values))
             plt.plot(steps, trials_by_verb[idx][-1],
-                     COLORS[idx], alpha=0.3)
+                     COLORS[idx], alpha=0.25)
 
     # plot median lines
     medians_by_verb = [get_median_diff_lengths(trials_by_verb[idx])
@@ -220,16 +220,18 @@ def make_plot(data, verbs, ylim=None, threshold=0.925):
                  medians_by_verb[idx],
                  COLORS[idx],
                  label=verbs[idx].__name__,
-                 linewidth=2)
+                 linewidth=2.5)
 
-    max_x = max([len(ls) for ls in medians_by_verb])
-    plt.plot(longest_x, [threshold for _ in range(max_x)],
-             linestyle='dashed', color='grey', alpha=0.5)
+    if threshold:
+        max_x = max([len(ls) for ls in medians_by_verb])
+        plt.plot(longest_x, [threshold for _ in range(max_x)],
+                 linestyle='dashed', color='grey', alpha=0.5)
 
     if ylim:
         plt.ylim(ylim)
 
     plt.legend(loc=4)
+    plt.tight_layout()
     plt.show()
 
 
