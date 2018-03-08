@@ -57,6 +57,7 @@ def experiment_analysis(path, verbs, trials=range(30), plots=True):
         make_boxplots(final_points, verbs)
         # make_barplots(convergence_points, verbs)
         make_plot(data, verbs, ylim=(0.8, 0.975), threshold=None)
+        make_plot(data, verbs, xmin=6000, ylim=(0.9, 0.975), threshold=None)
 
     pairs = list(it.combinations(verbs, 2))
     for pair in pairs:
@@ -190,7 +191,7 @@ def get_max_steps(data):
     return max_val
 
 
-def make_plot(data, verbs, ylim=None, threshold=None):
+def make_plot(data, verbs, ylim=None, xmin=None, threshold=None):
     """Makes a line plot of the accuracy of trials by quantifier, color coded,
     and with the medians also plotted.
 
@@ -229,6 +230,10 @@ def make_plot(data, verbs, ylim=None, threshold=None):
 
     if ylim:
         plt.ylim(ylim)
+
+    if xmin:
+        _, xmax = plt.xlim()
+        plt.xlim((xmin, xmax))
 
     plt.legend(loc=4)
     plt.tight_layout()
