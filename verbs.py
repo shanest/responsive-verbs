@@ -193,7 +193,7 @@ class Verb(object):
 
 
 class Know(Verb):
-    """Verb meaning: \Q \w: dox_w is a subset of Q_w and f(w) != empty
+    """Verb meaning: \P \w: dox_w in P_w
     """
 
     @staticmethod
@@ -208,19 +208,17 @@ class Know(Verb):
         # get the true answer at w
         world_cell = np.where(partition == partition[world])[0]
         # randomly include worlds from Q_w
-        to_add = world_cell[np.random.random(len(world_cell)) < 0.5]
-        dox_w[to_add] = 1
+        how_many = 1 + np.random.randint(len(world_cell))
+        dox_w[np.random.choice(world_cell, [how_many], replace=False)] = 1
 
-        # make sure dox_w not empty
-        if np.sum(dox_w) == 0:
-            dox_w[np.random.choice(world_cell)] = 1
+        dox_w[world] = 1
 
         return partition, world, dox_w
 
     @staticmethod
     def verify_true(partition, world, dox_w, is_declarative):
 
-        veridical = partition[world] == 1
+        veridical = partition[world] != 0 and dox_w[world] == 1
 
         world_cell = np.where(partition == partition[world])[0]
         dox_cell = np.nonzero(dox_w)[0]
@@ -229,8 +227,9 @@ class Know(Verb):
         return veridical and dox_sub_w
 
 
+# TODO: replace BeCertain by BeWrong in all CSV files
 class BeCertain(Verb):
-    """Verb meaning: \Q \w: dox_w is a subset of Q_w for some w
+    """Verb meaning: \P \w: dox_w in P
     """
 
     @staticmethod
@@ -242,7 +241,8 @@ class BeCertain(Verb):
                                                   partition[world]]):
             partition = generate_partition(num_worlds, is_declarative)
 
-        cell_values = np.unique(partition[partition != partition[world]])
+        # cell_values = np.unique(partition[partition != partition[world]])
+        cell_values = np.unique(partition)
         cell = np.where(partition == np.random.choice(cell_values))[0]
         # add at least 1 element of cell to dox_w
         how_many = 1 + np.random.randint(len(cell))
@@ -254,13 +254,13 @@ class BeCertain(Verb):
     def verify_true(partition, world, dox_w, is_declarative):
 
         opinionated = len(np.unique(partition[np.nonzero(dox_w)[0]])) == 1
-        falsely = not ((partition == partition[world]) * dox_w).any()
+        # falsely = not ((partition == partition[world]) * dox_w).any()
 
-        return opinionated and falsely
+        return opinionated # and falsely
 
 
 class Knopinion(Verb):
-    """Verb meaning: \Q \w: dox_w is a subset of Q_w or dox_w is in inq-neg(Q)
+    """Verb meaning: \P \w: w in dox_w and (dox_w in P or dox_w in neg-P)
     """
 
     @staticmethod
@@ -272,10 +272,14 @@ class Knopinion(Verb):
         cell_value = (partition[world] if len(not_info_q) == 0
                       else np.random.choice(np.unique(partition)))
 
+        # note: partition[world] can be 0, corresponding to inq-neg(Q)
+        cell_value = partition[world]
+
         cell = np.where(partition == cell_value)[0]
         # add at least 1 element of cell to dox_w
         how_many = 1 + np.random.randint(len(cell))
         dox_w[np.random.choice(cell, [how_many], replace=False)] = 1
+        dox_w[world] = 1
 
         return partition, world, dox_w
 
@@ -286,15 +290,45 @@ class Knopinion(Verb):
         dox_cell = np.nonzero(dox_w)[0]
         dox_sub_w = np.in1d(dox_cell, world_cell).all()
 
-        not_info_q = np.where(partition == 0)[0]
-        dox_sub_negq = np.in1d(dox_cell, not_info_q).all()
+        w_in_dox_w = dox_w[world] == 1
 
-        return dox_sub_w or dox_sub_negq
+        return dox_sub_w and w_in_dox_w
 
 
-class Wondows(Verb):
-    """Verb meaning: \f \w: dox_w \in info(f) and f(w) != empty and for every q in
-    alt(f), dox_w \cap q is not empty
+class Opiknow(Verb):
+    """Verb meaning: \P \w: w in info(P) and dox_w in P
+    """
+
+    @staticmethod
+    def generate_true(num_worlds):
+
+        partition, world, dox_w, is_declarative = Verb.initialize(num_worlds)
+
+        if is_declarative:
+            partition[world] = 1
+
+        cell_value = np.random.choice(
+            np.unique(partition[np.nonzero(partition)]))
+        cell = np.where(partition == cell_value)[0]
+        how_many = 1 + np.random.randint(len(cell))
+        dox_w[np.random.choice(cell, [how_many], replace=False)] = 1
+
+        return partition, world, dox_w
+
+    @staticmethod
+    def verify_true(partition, world, dox_w, is_declarative):
+
+        w_in_info = partition[world] != 0
+
+        opinionated = len(np.unique(partition[np.nonzero(dox_w)[0]])) == 1
+        not_negP = not ((partition == 0) * dox_w).any()
+
+        return w_in_info and opinionated and not_negP
+
+
+class Wondows(object):
+    """Verb meaning: \f \w: dox_w \subseteq info(f) and f(w) != empty and
+    for every q in alt(f), dox_w \cap q is not empty
     """
 
     @staticmethod
@@ -312,8 +346,6 @@ class Wondows(Verb):
         info_Q = np.nonzero(partition)[0]
         how_many = 1 + np.random.randint(len(info_Q))
         dox_w[np.random.choice(info_Q, [how_many], replace=False)] = 1
-
-        dox_w[world] = 1
 
         alts = np.unique(partition[info_Q])
         dox_alts = np.unique(partition[np.nonzero(dox_w)])
