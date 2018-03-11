@@ -19,7 +19,100 @@ import abc
 import numpy as np
 
 
-def embedding(partition):
+""" The following code for generating random partitions of a given number of
+cells of a set has been adapted from the following StackOverflow answer by
+Peter de Rivaz:
+    https://stackoverflow.com/a/45885244/9370349
+"""
+# TODO: better variable names below?
+fact = [1]
+
+
+def num_choose_k(n, k):
+    """Get number of ways of choosing k elements from n.
+
+    Args:
+        n: size of set to choose from
+        k: number of elements
+
+    Returns:
+        size of (n choose k)
+    """
+    while len(fact) <= n:
+        fact.append(fact[-1]*len(fact))
+    return fact[n]/(fact[k]*fact[n-k])
+
+
+cache = {}
+
+
+def count_partitions(n, k):
+    """Count number of ways of partitioning n items into k non-empty subsets.
+    This is the second Stirling number S(n, k).
+    """
+    if k == 1:
+        return 1
+
+    key = n, k
+    if key in cache:
+        return cache[key]
+
+    # The first element goes into the next partition
+    # We can have up to y additional elements from the n-1 remaining
+    # There will be n-1-y left over to partition into k-1 non-empty subsets
+    # so n-1-y>=k-1
+    # y<=n-k
+    t = 0
+    for y in range(0, n-k+1):
+        t += count_partitions(n-1-y, k-1) * num_choose_k(n-1, y)
+    cache[key] = t
+    return t
+
+
+def ith_subset(A, k, i):
+    """Return ith k-subset of A"""
+    n = len(A)
+    if n == k:
+        return A
+    if k == 0:
+        return []
+    # Choose first element x
+    for x in range(n):
+        # Find how many cases are possible with the first element being x
+        # There will be n-x-1 left over, from which we choose k-1
+        extra = num_choose_k(n-x-1, k-1)
+        if i < extra:
+            break
+        i -= extra
+    return [A[x]] + ith_subset(A[x+1:], k-1, i)
+
+
+def gen_part(A, k, i):
+    """Return i^th k-partition of elements in A (zero-indexed) as
+    list of lists"""
+    if k == 1:
+        return [A]
+
+    n = len(A)
+    # First find appropriate value for y - the extra amount in this subset
+    for y in range(0, n-k+1):
+        extra = count_partitions(n-1-y, k-1) * num_choose_k(n-1, y)
+        if i < extra:
+            break
+        i -= extra
+
+    # We count through the subsets,
+    # and for each subset we count through the partitions
+    # Split i into a count for subsets and a count for the remaining partitions
+    count_partition, count_subset = divmod(i, num_choose_k(n-1, y))
+    # Now find the i^th appropriate subset
+    subset = [A[0]] + ith_subset(A[1:], y, count_subset)
+    S = set(subset)
+    return [subset] + gen_part([a for a in A if a not in S],
+                               k-1, count_partition)
+
+
+def embedding(partition, num_worlds):
     """This function implements the E function from Theiler, Aloni, and
     Roelofsen.  In particular, it returns a square matrix of size num_worlds,
     with each row of the matrix corresponding to the complete answer to the
@@ -33,13 +126,9 @@ def embedding(partition):
     Returns:
         matrix of shape (len(partition), len(parttition))
     """
-    num_worlds = len(partition)
     result = np.zeros((num_worlds, num_worlds))
-    for world in range(num_worlds):
-        # this treats 0 as special, not part of a partition, so only used in
-        # declarative meanings
-        if partition[world] != 0:
-            cell = np.where(partition == partition[world])
+    for cell in partition:
+        for world in cell:
             result[world, cell] = 1
     return result
 
@@ -82,7 +171,8 @@ def partition_from_embedding(embedding):
     return np.sum(unique*(indices+1), axis=0, dtype=np.int_)
 
 
-def generate_partition(num_worlds, is_declarative):
+def generate_partition(num_worlds, is_declarative, max_cells=5):
+    # TODO: update this docstring
     """Generates a partition, which is just a 1-D array of integers.
 
     Args:
@@ -97,16 +187,39 @@ def generate_partition(num_worlds, is_declarative):
     """
     # geometric distribution biases towards small number of cells; play with
     # parameter 0.2?
-    upper_bound = 2 if is_declarative else min(num_worlds,
-                                               1+np.random.geometric(0.3))
-    partition = np.random.choice(np.arange(upper_bound), size=[num_worlds])
+    num_cells = 2 if is_declarative else np.random.randint(2, max_cells+1)
+    part_index = np.random.randint(count_partitions(num_worlds, num_cells))
+    partition = gen_part(range(num_worlds), num_cells, part_index)
+    # partition = np.random.choice(np.arange(upper_bound), size=[num_worlds])
     # convention: values are 1...N for inquisitive meanings, 0/1 for
     # declarative meanings; so we shift the whole partition up 1 if this is not
     # a declarative
-    if not is_declarative:
-        partition += 1
+    if is_declarative:
+        # declaratives only have one cell, i.e. one alternative
+        which_cell = np.random.randint(2)
+        partition = [partition[which_cell]]
+    # TODO: if needed, return num_cells and part_index, to rule out duplicates
+    # in data generator
     return partition
 # TODO: refactor add_from( )
+
+
+def in_partition(part, elt):
+    for cell in part:
+        if elt in cell:
+            return True
+    return False
+
+
+def cell_of_elt(part, elt):
+    for cell in part:
+        if elt in cell:
+            return cell
+    raise ValueError('{} not in partition {}'.format(elt, part))
+
+
+def list_subset(ls1, ls2):
+    return set(ls1) < set(ls2)
 
 
 class Verb(object):
@@ -162,12 +275,12 @@ class Verb(object):
             world: int, the actual world
             dox_w: 1-D array of 1s and 0s, the agent's doxastic state
         """
-        partition, world, dox_w, is_declarative = Verb.initialize(
-            num_worlds, dox_random=True)
+        partition, world, dox_w, is_declarative = (
+            Verb.initialize(num_worlds, dox_random=True))
 
         while cls.verify_true(partition, world, dox_w, is_declarative):
-            partition, world, dox_w, is_declarative = Verb.initialize(
-                num_worlds, dox_random=True)
+            partition, world, dox_w, is_declarative = (
+                Verb.initialize(num_worlds, dox_random=True))
 
         return partition, world, dox_w
 
@@ -185,7 +298,8 @@ class Verb(object):
             is_declarative: boolean, whether it's a declarative example or not
         """
         is_declarative = np.random.random() < 0.5
-        partition = generate_partition(num_worlds, is_declarative)
+        partition = generate_partition(num_worlds,
+                                       is_declarative)
         world = np.random.randint(num_worlds)
         dox_w = (np.random.choice([0, 1], [num_worlds])
                  if dox_random else np.zeros([num_worlds], dtype=np.int_))
@@ -201,12 +315,12 @@ class Know(Verb):
 
         partition, world, dox_w, is_declarative = Verb.initialize(num_worlds)
 
-        if is_declarative:
+        if is_declarative and not in_partition(partition, world):
             # proposition has to be true at w!
-            partition[world] = 1
+            partition[0].append(world)
 
         # get the true answer at w
-        world_cell = np.where(partition == partition[world])[0]
+        world_cell = cell_of_elt(partition, world)
         # randomly include worlds from Q_w
         how_many = 1 + np.random.randint(len(world_cell))
         dox_w[np.random.choice(world_cell, [how_many], replace=False)] = 1
@@ -218,17 +332,17 @@ class Know(Verb):
     @staticmethod
     def verify_true(partition, world, dox_w, is_declarative):
 
-        veridical = partition[world] != 0 and dox_w[world] == 1
+        veridical = in_partition(partition, world) and dox_w[world] == 1
 
-        world_cell = np.where(partition == partition[world])[0]
+        world_cell = cell_of_elt(partition, world)
         dox_cell = np.nonzero(dox_w)[0]
-        dox_sub_w = np.in1d(dox_cell, world_cell).all()
+        dox_sub_w = list_subset(dox_cell, world_cell)
 
         return veridical and dox_sub_w
 
 
 # TODO: replace BeCertain by BeWrong in all CSV files
-class BeCertain(Verb):
+class BeCertain(object):
     """Verb meaning: \P \w: dox_w in P
     """
 
@@ -259,7 +373,7 @@ class BeCertain(Verb):
         return opinionated # and falsely
 
 
-class Knopinion(Verb):
+class Knopinion(object):
     """Verb meaning: \P \w: w in dox_w and (dox_w in P or dox_w in neg-P)
     """
 
@@ -295,7 +409,7 @@ class Knopinion(Verb):
         return dox_sub_w and w_in_dox_w
 
 
-class Opiknow(Verb):
+class Opiknow(object):
     """Verb meaning: \P \w: w in info(P) and dox_w in P
     """
 
