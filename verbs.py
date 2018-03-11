@@ -73,9 +73,9 @@ def ith_subset(A, k, i):
     """Return ith k-subset of A"""
     n = len(A)
     if n == k:
-        return A
+        return tuple(A)
     if k == 0:
-        return []
+        return tuple([])
     # Choose first element x
     for x in range(n):
         # Find how many cases are possible with the first element being x
@@ -84,14 +84,14 @@ def ith_subset(A, k, i):
         if i < extra:
             break
         i -= extra
-    return [A[x]] + ith_subset(A[x+1:], k-1, i)
+    return (A[x],) + ith_subset(A[x+1:], k-1, i)
 
 
 def gen_part(A, k, i):
     """Return i^th k-partition of elements in A (zero-indexed) as
     list of lists"""
     if k == 1:
-        return [A]
+        return (tuple(A),)
 
     n = len(A)
     # First find appropriate value for y - the extra amount in this subset
@@ -106,9 +106,9 @@ def gen_part(A, k, i):
     # Split i into a count for subsets and a count for the remaining partitions
     count_partition, count_subset = divmod(i, num_choose_k(n-1, y))
     # Now find the i^th appropriate subset
-    subset = [A[0]] + ith_subset(A[1:], y, count_subset)
+    subset = (A[0],) + ith_subset(A[1:], y, count_subset)
     S = set(subset)
-    return [subset] + gen_part([a for a in A if a not in S],
+    return (subset,) + gen_part([a for a in A if a not in S],
                                k-1, count_partition)
 
 
@@ -130,6 +130,14 @@ def embedding(partition, num_worlds):
     for cell in partition:
         for world in cell:
             result[world, cell] = 1
+    return result
+
+
+def embedding2(partition, num_worlds, max_cells):
+    result = np.zeros((max_cells, num_worlds))
+    for idx in range(len(partition)):
+        cell = partition[idx]
+        result[idx, cell] = 1
     return result
 
 
@@ -197,7 +205,7 @@ def generate_partition(num_worlds, is_declarative, max_cells=5):
     if is_declarative:
         # declaratives only have one cell, i.e. one alternative
         which_cell = np.random.randint(2)
-        partition = [partition[which_cell]]
+        partition = (partition[which_cell],)
     # TODO: if needed, return num_cells and part_index, to rule out duplicates
     # in data generator
     return partition
@@ -211,11 +219,41 @@ def in_partition(part, elt):
     return False
 
 
-def cell_of_elt(part, elt):
+def complement(part, num_worlds):
+
+    worlds = range(num_worlds)
+    in_part = set([item for cell in part for item in cell])
+    return (tuple([world for world in worlds if world not in in_part]),)
+
+
+def fill_in_partition(part, num_worlds):
+    comp = complement(part, num_worlds)
+    return part + comp if len(comp[0]) > 0 else part
+
+
+def cell_of_elt(part, elt, num_worlds=None):
     for cell in part:
         if elt in cell:
             return cell
-    raise ValueError('{} not in partition {}'.format(elt, part))
+    return complement(part, num_worlds)[0]
+
+
+def index_of_elt(part, elt):
+    for idx in range(len(part)):
+        if elt in part[idx]:
+            return idx
+    raise ValueError('{} not in {}'.format(elt, part))
+
+
+def num_cells_intersect(partition, dox_w):
+
+    cells = set()
+    num_worlds = len(dox_w)
+    partition = fill_in_partition(partition, num_worlds)
+    for world in range(num_worlds):
+        if dox_w[world]:
+            cells.add(index_of_elt(partition, world))
+    return len(cells)
 
 
 def list_subset(ls1, ls2):
@@ -227,7 +265,7 @@ class Verb(object):
     __metaclass__ = abc.ABCMeta
 
     @abc.abstractmethod
-    def generate_true(num_worlds):
+    def generate_true(num_worlds, max_cells):
         """Generate true examples of your Verb.
 
         Args:
@@ -256,15 +294,15 @@ class Verb(object):
         pass
 
     @classmethod
-    def generate(cls, num_worlds, truth_value):
+    def generate(cls, num_worlds, truth_value, max_cells=5):
         """Generate examples.  Calls generate_true or generate_false based on
         the argument truth_value.
         """
-        return (cls.generate_true(num_worlds) if truth_value else
-                cls.generate_false(num_worlds))
+        return (cls.generate_true(num_worlds, max_cells) if truth_value else
+                cls.generate_false(num_worlds, max_cells))
 
     @classmethod
-    def generate_false(cls, num_worlds):
+    def generate_false(cls, num_worlds, max_cells):
         """Generate false examples of your Verb.
 
         Args:
@@ -276,16 +314,16 @@ class Verb(object):
             dox_w: 1-D array of 1s and 0s, the agent's doxastic state
         """
         partition, world, dox_w, is_declarative = (
-            Verb.initialize(num_worlds, dox_random=True))
+            Verb.initialize(num_worlds, max_cells, dox_random=True))
 
         while cls.verify_true(partition, world, dox_w, is_declarative):
             partition, world, dox_w, is_declarative = (
-                Verb.initialize(num_worlds, dox_random=True))
+                Verb.initialize(num_worlds, max_cells, dox_random=True))
 
         return partition, world, dox_w
 
     @staticmethod
-    def initialize(num_worlds, dox_random=False):
+    def initialize(num_worlds, max_cells, dox_random=False):
         """Perform initial prep for generate functions.
 
         Args:
@@ -299,7 +337,7 @@ class Verb(object):
         """
         is_declarative = np.random.random() < 0.5
         partition = generate_partition(num_worlds,
-                                       is_declarative)
+                                       is_declarative, max_cells)
         world = np.random.randint(num_worlds)
         dox_w = (np.random.choice([0, 1], [num_worlds])
                  if dox_random else np.zeros([num_worlds], dtype=np.int_))
@@ -307,20 +345,21 @@ class Verb(object):
 
 
 class Know(Verb):
-    """Verb meaning: \P \w: dox_w in P_w
+    """Verb meaning: \P \w: dox_w in P and w in dox_w
     """
 
     @staticmethod
-    def generate_true(num_worlds):
+    def generate_true(num_worlds, max_cells):
 
-        partition, world, dox_w, is_declarative = Verb.initialize(num_worlds)
+        partition, world, dox_w, is_declarative = Verb.initialize(num_worlds,
+                                                                  max_cells)
 
         if is_declarative and not in_partition(partition, world):
             # proposition has to be true at w!
-            partition[0].append(world)
+            partition = ((partition[0] + (world,)),)
 
         # get the true answer at w
-        world_cell = cell_of_elt(partition, world)
+        world_cell = cell_of_elt(partition, world, num_worlds)
         # randomly include worlds from Q_w
         how_many = 1 + np.random.randint(len(world_cell))
         dox_w[np.random.choice(world_cell, [how_many], replace=False)] = 1
@@ -334,7 +373,7 @@ class Know(Verb):
 
         veridical = in_partition(partition, world) and dox_w[world] == 1
 
-        world_cell = cell_of_elt(partition, world)
+        world_cell = cell_of_elt(partition, world, len(dox_w))
         dox_cell = np.nonzero(dox_w)[0]
         dox_sub_w = list_subset(dox_cell, world_cell)
 
@@ -342,57 +381,47 @@ class Know(Verb):
 
 
 # TODO: replace BeCertain by BeWrong in all CSV files
-class BeCertain(object):
+class BeCertain(Verb):
     """Verb meaning: \P \w: dox_w in P
     """
 
     @staticmethod
-    def generate_true(num_worlds):
+    def generate_true(num_worlds, max_cells):
 
-        partition, world, dox_w, is_declarative = Verb.initialize(num_worlds)
+        partition, world, dox_w, is_declarative = Verb.initialize(num_worlds,
+                                                                  max_cells)
 
-        while np.array_equal(partition, partition[partition ==
-                                                  partition[world]]):
-            partition = generate_partition(num_worlds, is_declarative)
-
-        # cell_values = np.unique(partition[partition != partition[world]])
-        cell_values = np.unique(partition)
-        cell = np.where(partition == np.random.choice(cell_values))[0]
+        partition = fill_in_partition(partition, num_worlds)
+        cell = partition[np.random.randint(len(partition))]
         # add at least 1 element of cell to dox_w
         how_many = 1 + np.random.randint(len(cell))
         dox_w[np.random.choice(cell, [how_many], replace=False)] = 1
+
+        if is_declarative:
+            partition = (partition[np.random.randint(len(partition))],)
 
         return partition, world, dox_w
 
     @staticmethod
     def verify_true(partition, world, dox_w, is_declarative):
 
-        opinionated = len(np.unique(partition[np.nonzero(dox_w)[0]])) == 1
-        # falsely = not ((partition == partition[world]) * dox_w).any()
-
-        return opinionated # and falsely
+        return num_cells_intersect(partition, dox_w) == 1
 
 
-class Knopinion(object):
+class Knopinion(Verb):
     """Verb meaning: \P \w: w in dox_w and (dox_w in P or dox_w in neg-P)
     """
 
     @staticmethod
-    def generate_true(num_worlds):
+    def generate_true(num_worlds, max_cells):
 
-        partition, world, dox_w, _ = Verb.initialize(num_worlds)
+        partition, world, dox_w, _ = Verb.initialize(num_worlds, max_cells)
 
-        not_info_q = np.where(partition == 0)[0]
-        cell_value = (partition[world] if len(not_info_q) == 0
-                      else np.random.choice(np.unique(partition)))
+        world_cell = cell_of_elt(partition, world, num_worlds)
 
-        # note: partition[world] can be 0, corresponding to inq-neg(Q)
-        cell_value = partition[world]
-
-        cell = np.where(partition == cell_value)[0]
         # add at least 1 element of cell to dox_w
-        how_many = 1 + np.random.randint(len(cell))
-        dox_w[np.random.choice(cell, [how_many], replace=False)] = 1
+        how_many = 1 + np.random.randint(len(world_cell))
+        dox_w[np.random.choice(world_cell, [how_many], replace=False)] = 1
         dox_w[world] = 1
 
         return partition, world, dox_w
@@ -400,13 +429,46 @@ class Knopinion(object):
     @staticmethod
     def verify_true(partition, world, dox_w, is_declarative):
 
-        world_cell = np.where(partition == partition[world])[0]
+        world_cell = cell_of_elt(partition, world, len(dox_w))
         dox_cell = np.nonzero(dox_w)[0]
-        dox_sub_w = np.in1d(dox_cell, world_cell).all()
+        dox_sub_w = list_subset(dox_cell, world_cell)
 
         w_in_dox_w = dox_w[world] == 1
 
         return dox_sub_w and w_in_dox_w
+
+
+class Wondows(Verb):
+    """Verb meaning: \P \w: w in info(P) and dox_w subset info(P) and
+    for every q in alt(f), dox_w \cap q is not empty
+    """
+
+    @staticmethod
+    def generate_true(num_worlds, max_cells):
+
+        partition, world, dox_w, is_declarative = Verb.initialize(num_worlds,
+                                                                  max_cells)
+
+        if is_declarative and not in_partition(partition, world):
+            # proposition has to be true at w!
+            partition = ((partition[0] + (world,)),)
+
+        for cell in partition:
+            how_many = 1 + np.random.randint(len(cell))
+            dox_w[np.random.choice(cell, [how_many], replace=False)] = 1
+
+        # dox_w[world] = 1
+
+        return partition, world, dox_w
+
+    @staticmethod
+    def verify_true(partition, world, dox_w, is_declarative):
+
+        in_info_q = in_partition(partition, world)
+        intersect_every_cell = (num_cells_intersect(partition, dox_w) ==
+                                len(partition))
+
+        return in_info_q and intersect_every_cell
 
 
 class Opiknow(object):
@@ -414,16 +476,17 @@ class Opiknow(object):
     """
 
     @staticmethod
-    def generate_true(num_worlds):
+    def generate_true(num_worlds, max_cells):
 
-        partition, world, dox_w, is_declarative = Verb.initialize(num_worlds)
+        partition, world, dox_w, is_declarative = Verb.initialize(num_worlds,
+                                                                  max_cells)
 
-        if is_declarative:
-            partition[world] = 1
+        if is_declarative and not in_partition(partition, world):
+            # proposition has to be true at w!
+            partition = ((partition[0] + (world,)),)
 
-        cell_value = np.random.choice(
-            np.unique(partition[np.nonzero(partition)]))
-        cell = np.where(partition == cell_value)[0]
+        cell = partition[np.random.randint(len(partition))]
+        # add at least 1 element of cell to dox_w
         how_many = 1 + np.random.randint(len(cell))
         dox_w[np.random.choice(cell, [how_many], replace=False)] = 1
 
@@ -432,54 +495,12 @@ class Opiknow(object):
     @staticmethod
     def verify_true(partition, world, dox_w, is_declarative):
 
-        w_in_info = partition[world] != 0
+        w_in_info = in_partition(partition, world)
 
-        opinionated = len(np.unique(partition[np.nonzero(dox_w)[0]])) == 1
-        not_negP = not ((partition == 0) * dox_w).any()
+        opinionated = num_cells_intersect(partition, dox_w) == 1
+        not_negP = not list_subset(dox_w, complement(partition, len(dox_w))[0])
 
         return w_in_info and opinionated and not_negP
-
-
-class Wondows(object):
-    """Verb meaning: \f \w: dox_w \subseteq info(f) and f(w) != empty and
-    for every q in alt(f), dox_w \cap q is not empty
-    """
-
-    @staticmethod
-    def generate_true(num_worlds):
-
-        partition, world, dox_w, is_declarative = Verb.initialize(num_worlds)
-
-        # TODO: add properties of partitions to generate_partition?
-        while np.sum(partition) == 0:
-            partition = generate_partition(num_worlds, is_declarative)
-
-        if is_declarative:
-            partition[world] = 1
-
-        info_Q = np.nonzero(partition)[0]
-        how_many = 1 + np.random.randint(len(info_Q))
-        dox_w[np.random.choice(info_Q, [how_many], replace=False)] = 1
-
-        alts = np.unique(partition[info_Q])
-        dox_alts = np.unique(partition[np.nonzero(dox_w)])
-        for missing in list(np.setdiff1d(alts, dox_alts)):
-            to_add = np.where(partition == missing)[0]
-            how_many = 1 + np.random.randint(len(to_add))
-            dox_w[np.random.choice(to_add, [how_many], replace=False)] = 1
-
-        return partition, world, dox_w
-
-    @staticmethod
-    def verify_true(partition, world, dox_w, is_declarative):
-
-        fw_not_empty = partition[world] != 0
-        in_info_q = not dox_w[np.where(partition == 0)[0]].any()
-        intersect_every_cell = np.array_equal(
-            np.unique(partition[partition != 0]),
-            np.unique(partition[np.nonzero(dox_w)]))
-
-        return fw_not_empty and in_info_q and intersect_every_cell
 
 
 def get_all_verbs():
