@@ -96,7 +96,7 @@ def run_trial(eparams, hparams, trial_num,
 
     # GENERATE DATA
     generator = data.DataGenerator(
-        hparams['verbs'], eparams['num_worlds'],
+        hparams['verbs'], eparams['num_worlds'], eparams['max_cells'],
         eparams['items_per_bin'], eparams['tries_per_bin'],
         eparams['test_bin_size'])
 
@@ -133,6 +133,7 @@ def main_experiment(write_dir='data/'):
     eparams = {'num_epochs': 12,
                'batch_size': 128,
                'num_worlds': 20,
+               'max_cells': 5,
                'items_per_bin': 16000,
                'tries_per_bin': 60000,
                'test_bin_size': 4000,
