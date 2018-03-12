@@ -47,7 +47,7 @@ def experiment_analysis(path, verbs, trials=range(30), plots=True):
     convergence_points = get_convergence_points(data, verbs, threshold)
     # TODO: no convergence points for this experiment? just final?
     # TODO: mean over last N=20 training steps?
-    final_n = 150
+    final_n = 50
     final_points = {verb: [(sum(data[trial][verb.__name__ +
                                             '_accuracy'].values[-final_n:])
                             / final_n)
