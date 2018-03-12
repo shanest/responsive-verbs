@@ -69,7 +69,6 @@ class DataGenerator(object):
     def generate_point(self, partition, world, v_w):
         # TODO: play with embedding
         embedding = verbs.embedding(partition, self.num_worlds)
-        # embedding = verbs.partition_as_matrix(verbs.partition_from_embedding(embedding))
         # embedding = verbs.embedding2(partition, self.num_worlds, self.max_cells)
         embedding_vec = np.reshape(embedding, -1)
         world_vec = self.one_hots[world]
