@@ -471,37 +471,5 @@ class Wondows(Verb):
         return in_info_q and intersect_every_cell
 
 
-class Opiknow(object):
-    """Verb meaning: \P \w: w in info(P) and dox_w in P
-    """
-
-    @staticmethod
-    def generate_true(num_worlds, max_cells):
-
-        partition, world, dox_w, is_declarative = Verb.initialize(num_worlds,
-                                                                  max_cells)
-
-        if is_declarative and not in_partition(partition, world):
-            # proposition has to be true at w!
-            partition = ((partition[0] + (world,)),)
-
-        cell = partition[np.random.randint(len(partition))]
-        # add at least 1 element of cell to dox_w
-        how_many = 1 + np.random.randint(len(cell))
-        dox_w[np.random.choice(cell, [how_many], replace=False)] = 1
-
-        return partition, world, dox_w
-
-    @staticmethod
-    def verify_true(partition, world, dox_w, is_declarative):
-
-        w_in_info = in_partition(partition, world)
-
-        opinionated = num_cells_intersect(partition, dox_w) == 1
-        not_negP = not list_subset(dox_w, complement(partition, len(dox_w))[0])
-
-        return w_in_info and opinionated and not_negP
-
-
 def get_all_verbs():
     return globals()['Verb'].__subclasses__()

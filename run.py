@@ -130,7 +130,7 @@ def run_trial(eparams, hparams, trial_num,
 # DEFINE AN EXPERIMENT
 def main_experiment(write_dir='data/'):
 
-    eparams = {'num_epochs': 12,
+    eparams = {'num_epochs': 15,
                'batch_size': 128,
                'num_worlds': 20,
                'max_cells': 5,

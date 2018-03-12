@@ -38,7 +38,7 @@ def experiment_analysis(path, verbs, trials=range(30), plots=True):
         plots: whether to make plots or not
     """
 
-    threshold = 0.91
+    threshold = 0.92
     # read the data in
     data = util.read_trials_from_csv(path, trials)
     # FILTER OUT TRIALS WHERE RNN DID NOT LEARN
@@ -47,7 +47,7 @@ def experiment_analysis(path, verbs, trials=range(30), plots=True):
     convergence_points = get_convergence_points(data, verbs, threshold)
     # TODO: no convergence points for this experiment? just final?
     # TODO: mean over last N=20 training steps?
-    final_n = 100
+    final_n = 150
     final_points = {verb: [(sum(data[trial][verb.__name__ +
                                             '_accuracy'].values[-final_n:])
                             / final_n)
@@ -60,9 +60,9 @@ def experiment_analysis(path, verbs, trials=range(30), plots=True):
         make_boxplots(final_points, verbs)
         # make_barplots(convergence_points, verbs)
         make_plot(data, verbs, ylim=(0.8, 0.97), threshold=None,
-                  inset={'zoom': 2.5,
-                         'xlim': (7000, 9000),
-                         'ylim': (0.93, 0.95)})
+                  inset={'zoom': 3.5,
+                         'xlim': (9000, 11200),
+                         'ylim': (0.94, 0.96)})
 
     pairs = list(it.combinations(verbs, 2))
     for pair in pairs:
