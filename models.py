@@ -68,7 +68,7 @@ def basic_ffnn(features, labels, mode, params):
     # loss and training
     loss = tf.losses.sparse_softmax_cross_entropy(labels, logits)
     # TODO: parameterize optimizer?
-    optimizer = tf.train.AdamOptimizer()
+    optimizer = tf.train.RMSPropOptimizer(0.001)
     train_op = optimizer.minimize(loss, global_step=tf.train.get_global_step())
 
     # -- true_labels: [batch_size]

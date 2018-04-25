@@ -132,8 +132,8 @@ def main_experiment(write_dir='data/'):
 
     eparams = {'num_epochs': 15,
                'batch_size': 128,
-               'num_worlds': 20,
-               'max_cells': 5,
+               'num_worlds': 16,
+               'max_cells': 4,
                'items_per_bin': 16000,
                'tries_per_bin': 60000,
                'test_bin_size': 4000,
@@ -148,7 +148,7 @@ def main_experiment(write_dir='data/'):
                     'dropout': 0.1}]*4,
                'input_feature': 'x'}
 
-    for trial in xrange(30):
+    for trial in xrange(30, 45):
         run_trial(eparams, hparams, trial, write_dir)
 
 

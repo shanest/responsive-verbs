@@ -18,15 +18,19 @@ from __future__ import division, print_function
 import itertools as it
 import numpy as np
 import scipy.stats as stats
+import matplotlib as mpl
+mpl.use('TkAgg')
 from matplotlib import pyplot as plt
 from mpl_toolkits.axes_grid1.inset_locator import zoomed_inset_axes
 from mpl_toolkits.axes_grid1.inset_locator import mark_inset
+import pandas as pd
+import seaborn as sns
 
 import util
 import verbs
 
 
-COLORS = ['xkcd:sea green', 'xkcd:blue green',
+COLORS = ['xkcd:forest green', 'xkcd:blue green',
           'xkcd:light orange', 'xkcd:peach']
 
 
@@ -38,7 +42,7 @@ def experiment_analysis(path, verbs, trials=range(30), plots=True):
         plots: whether to make plots or not
     """
 
-    threshold = 0.92
+    threshold = 0.93
     # read the data in
     data = util.read_trials_from_csv(path, trials)
     # FILTER OUT TRIALS WHERE RNN DID NOT LEARN
@@ -47,7 +51,7 @@ def experiment_analysis(path, verbs, trials=range(30), plots=True):
     convergence_points = get_convergence_points(data, verbs, threshold)
     # TODO: no convergence points for this experiment? just final?
     # TODO: mean over last N=20 training steps?
-    final_n = 50
+    final_n = 20
     final_points = {verb: [(sum(data[trial][verb.__name__ +
                                             '_accuracy'].values[-final_n:])
                             / final_n)
@@ -55,22 +59,66 @@ def experiment_analysis(path, verbs, trials=range(30), plots=True):
                     for verb in verbs}
 
     if plots:
+        """
+        # TODO: refactor this into its own method
+        reshaped = pd.DataFrame()
+        for trial in data:
+            for verb in verbs:
+                new_data = pd.DataFrame(
+                    {'steps': data[trial]['global_step'],
+                     'verb': verb.__name__,
+                     'accuracy': smooth_data(
+                         data[trial][verb.__name__ + '_accuracy'],
+                         smooth_weight=0.7),
+                     'trial': trial})
+                reshaped = reshaped.append(new_data)
+        sns.tsplot(reshaped, time='steps', value='accuracy',
+                   condition='verb', unit='trial', err_style='unit_traces',
+                   estimator=np.median)
+        plt.ylim((0.8, 0.96))
+        # plt.ylim((0.93, 0.96))
+        # plt.xlim((10000, 11200))
+        plt.show()
+        """
+
         # make plots
         make_boxplots(convergence_points, verbs)
         make_boxplots(final_points, verbs)
         # make_barplots(convergence_points, verbs)
-        make_plot(data, verbs, ylim=(0.8, 0.97), threshold=None,
-                  inset={'zoom': 3.5,
+        make_plot(data, verbs, ylim=(0.8, 0.96), threshold=None,
+                  inset={'zoom': 3.25,
                          'xlim': (9000, 11200),
-                         'ylim': (0.94, 0.96)})
+                         'ylim': (0.93, 0.9525)})
 
     pairs = list(it.combinations(verbs, 2))
+    final_data = {}
     for pair in pairs:
         print('{} vs. {}'.format(pair[0].__name__, pair[1].__name__))
         print(stats.ttest_rel(final_points[pair[0]],
                               final_points[pair[1]]))
         print(stats.ttest_rel(convergence_points[pair[0]],
                               convergence_points[pair[1]]))
+        pair_name = '{} - {}'.format(pair[0].__name__, pair[1].__name__)
+        final_data[pair_name] = (
+            np.array(final_points[pair[0]]) -
+            np.array(final_points[pair[1]]))
+
+    for pair in pairs:
+        pair_name = '{} - {}'.format(pair[0].__name__, pair[1].__name__)
+        if pair[0].__name__ == 'Know':
+            sns.distplot(final_data[pair_name], rug=True,
+                    label=pair_name)
+    plt.legend()
+    plt.show()
+    for pair in pairs:
+        pair_name = '{} - {}'.format(pair[0].__name__, pair[1].__name__)
+        if pair[0].__name__ == 'BeCertain':
+            sns.distplot(final_data[pair_name], rug=True,
+                    label=pair_name)
+    plt.legend()
+    plt.show()
+    sns.barplot(data=pd.DataFrame(final_data))
+    plt.show()
 
 
 def remove_bad_trials(data, threshold=0.95):
@@ -217,7 +265,7 @@ def make_plot(data, verbs, ylim=None, xlim=None, threshold=None, loc=2,
             trials_by_verb[idx].append(smooth_data(
                 data[trial][verbs[idx].__name__ + '_accuracy'].values))
             ax.plot(steps, trials_by_verb[idx][-1],
-                     COLORS[idx], alpha=0.25)
+                     COLORS[idx], alpha=0.2)
 
     # plot median lines
     medians_by_verb = [get_median_diff_lengths(trials_by_verb[idx])
@@ -229,7 +277,7 @@ def make_plot(data, verbs, ylim=None, xlim=None, threshold=None, loc=2,
                 medians_by_verb[idx],
                 COLORS[idx],
                 label=verbs[idx].__name__,
-                linewidth=2.5)
+                linewidth=2.75)
 
     if threshold:
         max_x = max([len(ls) for ls in medians_by_verb])
@@ -357,4 +405,5 @@ def smooth_data(data, smooth_weight=0.85):
 
 
 if __name__ == '__main__':
-    experiment_analysis('data/', verbs.get_all_verbs())
+    experiment_analysis('/tmp/BeCertainKnopinion/', verbs.get_all_verbs(),
+            plots=True)
