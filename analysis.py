@@ -405,5 +405,5 @@ def smooth_data(data, smooth_weight=0.85):
 
 
 if __name__ == '__main__':
-    experiment_analysis('data-rms/', verbs.get_all_verbs(),
+    experiment_analysis('data/', verbs.get_all_verbs(),
             plots=True)
