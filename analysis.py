@@ -34,7 +34,7 @@ COLORS = ['xkcd:forest green', 'xkcd:blue green',
           'xkcd:light orange', 'xkcd:peach']
 
 
-def experiment_analysis(path, verbs, trials=range(30), plots=True):
+def experiment_analysis(path, verbs, trials=range(60), plots=True):
     """Prints statistical tests and makes plots for experiment one.
 
     Args:
@@ -405,5 +405,5 @@ def smooth_data(data, smooth_weight=0.85):
 
 
 if __name__ == '__main__':
-    experiment_analysis('/tmp/BeCertainKnopinion/', verbs.get_all_verbs(),
+    experiment_analysis('data-rms/', verbs.get_all_verbs(),
             plots=True)
