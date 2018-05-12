@@ -20,11 +20,13 @@ import numpy as np
 import scipy.stats as stats
 import matplotlib as mpl
 mpl.use('TkAgg')
+
 from matplotlib import pyplot as plt
 from mpl_toolkits.axes_grid1.inset_locator import zoomed_inset_axes
 from mpl_toolkits.axes_grid1.inset_locator import mark_inset
 import pandas as pd
 import seaborn as sns
+import matplotlib.gridspec as gridspec
 
 import util
 import verbs
@@ -85,10 +87,16 @@ def experiment_analysis(path, verbs, trials=range(60), plots=True):
         make_boxplots(convergence_points, verbs)
         make_boxplots(final_points, verbs)
         # make_barplots(convergence_points, verbs)
-        make_plot(data, verbs, ylim=(0.8, 0.96), threshold=None,
-                  inset={'zoom': 3.25,
-                         'xlim': (9000, 11200),
-                         'ylim': (0.93, 0.9525)})
+
+    gs = gridspec.GridSpec(2, 3)
+
+    ax_acc = plt.subplot(gs[:, :-1])
+
+    make_plot(data, verbs, ylim=(0.8, 0.96), threshold=None,
+              inset={'zoom': 3.25,
+                     'xlim': (9000, 11200),
+                     'ylim': (0.93, 0.9525)},
+              ax=ax_acc)
 
     pairs = list(it.combinations(verbs, 2))
     final_data = {}
@@ -103,20 +111,26 @@ def experiment_analysis(path, verbs, trials=range(60), plots=True):
             np.array(final_points[pair[0]]) -
             np.array(final_points[pair[1]]))
 
+    ax_dists1 = plt.subplot(gs[0, -1])
     for pair in pairs:
         pair_name = '{} - {}'.format(pair[0].__name__, pair[1].__name__)
         if pair[0].__name__ == 'Know':
             sns.distplot(final_data[pair_name], rug=True,
-                    label=pair_name)
+                         label=pair_name,
+                         ax=ax_dists1)
     plt.legend()
-    plt.show()
+
+    ax_dists2 = plt.subplot(gs[1, -1])
     for pair in pairs:
         pair_name = '{} - {}'.format(pair[0].__name__, pair[1].__name__)
         if pair[0].__name__ == 'BeCertain':
             sns.distplot(final_data[pair_name], rug=True,
-                    label=pair_name)
+                         label=pair_name,
+                         ax=ax_dists2)
     plt.legend()
+    plt.tight_layout()
     plt.show()
+
     sns.barplot(data=pd.DataFrame(final_data))
     plt.show()
 
@@ -245,7 +259,7 @@ def get_max_steps(data):
 
 
 def make_plot(data, verbs, ylim=None, xlim=None, threshold=None, loc=2,
-              inset=None):
+              inset=None, ax=None):
     """Makes a line plot of the accuracy of trials by quantifier, color coded,
     and with the medians also plotted.
 
@@ -256,7 +270,8 @@ def make_plot(data, verbs, ylim=None, xlim=None, threshold=None, loc=2,
     """
     assert len(verbs) <= len(COLORS)
 
-    fig, ax = plt.subplots()
+    if ax is None:
+        _, ax = plt.subplots()
 
     trials_by_verb = [[] for _ in range(len(verbs))]
     for trial in data:
@@ -313,9 +328,6 @@ def make_plot(data, verbs, ylim=None, xlim=None, threshold=None, loc=2,
         axins.set_yticks([])
 
     mark_inset(ax, axins, loc1=1, loc2=2, fc="none", ec="0.5")
-
-    plt.tight_layout()
-    plt.show()
 
 
 def get_median_diff_lengths(trials):
@@ -406,4 +418,4 @@ def smooth_data(data, smooth_weight=0.85):
 
 if __name__ == '__main__':
     experiment_analysis('data/', verbs.get_all_verbs(),
-            plots=True)
+                        plots=True)
