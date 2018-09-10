@@ -93,11 +93,20 @@ def basic_ffnn(features, labels, mode, params):
         # TODO: loss by verb as well?
         verb_name = params['verbs'][idx].__name__
         acc_key = '{}_accuracy'.format(verb_name)
-        metrics[acc_key] = tf.metrics.accuracy(labels=label_by_verb[idx],
-                                               predictions=prediction_by_verb[idx])
+        metrics[acc_key] = tf.metrics.accuracy(
+            labels=label_by_verb[idx],
+            predictions=prediction_by_verb[idx])
         F1_key = '{}_F1'.format(verb_name)
         metrics[F1_key] = F1_metric(labels=label_by_verb[idx],
                                     predictions=prediction_by_verb[idx])
+        metrics['{}_tp'.format(verb_name)] = tf.metrics.true_positives(
+            label_by_verb[idx], prediction_by_verb[idx])
+        metrics['{}_tn'.format(verb_name)] = tf.metrics.true_negatives(
+            label_by_verb[idx], prediction_by_verb[idx])
+        metrics['{}_fp'.format(verb_name)] = tf.metrics.false_positives(
+            label_by_verb[idx], prediction_by_verb[idx])
+        metrics['{}_fn'.format(verb_name)] = tf.metrics.false_negatives(
+            label_by_verb[idx], prediction_by_verb[idx])
 
     return tf.estimator.EstimatorSpec(mode,
                                       loss=loss,
