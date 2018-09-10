@@ -91,10 +91,11 @@ def basic_ffnn(features, labels, mode, params):
         labels, verb_indices, num_verbs)
     for idx in xrange(num_verbs):
         # TODO: loss by verb as well?
-        acc_key = '{}_accuracy'.format(params['verbs'][idx].__name__)
+        verb_name = params['verbs'][idx].__name__
+        acc_key = '{}_accuracy'.format(verb_name)
         metrics[acc_key] = tf.metrics.accuracy(labels=label_by_verb[idx],
                                                predictions=prediction_by_verb[idx])
-        F1_key = '{}_F1'.format(params['verbs'][idx].__name__)
+        F1_key = '{}_F1'.format(verb_name)
         metrics[F1_key] = F1_metric(labels=label_by_verb[idx],
                                     predictions=prediction_by_verb[idx])
 
