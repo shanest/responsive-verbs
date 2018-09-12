@@ -64,12 +64,16 @@ def experiment_analysis(path, verbs, trials=range(60), plots=True,
 
     if confusion:
         conf_mats = defaultdict(dict)
-        for verb in verbs:
-            name = verb.__name__
-            for stat in ['tp', 'tn', 'fp', 'fn']:
+        all_dict = defaultdict(float)
+        for stat in ['tp', 'tn', 'fp', 'fn']:
+            for verb in verbs:
+                name = verb.__name__
                 conf_mats[name][stat] = np.mean(
                     [data[trial][name + '_' + stat].values[-1]
                      for trial in trials])
+            all_dict[stat] = sum([conf_mats[key][stat]
+                                  for key in conf_mats])
+        conf_mats['all'] = all_dict
         print(conf_mats)
 
     if plots:
