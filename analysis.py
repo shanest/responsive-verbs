@@ -15,6 +15,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>
 """
 from __future__ import division, print_function
+from collections import defaultdict
 import itertools as it
 import numpy as np
 import scipy.stats as stats
@@ -36,7 +37,8 @@ COLORS = ['xkcd:forest green', 'xkcd:blue green',
           'xkcd:light orange', 'xkcd:peach']
 
 
-def experiment_analysis(path, verbs, trials=range(60), plots=True):
+def experiment_analysis(path, verbs, trials=range(60), plots=True,
+                        confusion=True):
     """Prints statistical tests and makes plots for experiment one.
 
     Args:
@@ -59,6 +61,16 @@ def experiment_analysis(path, verbs, trials=range(60), plots=True):
                             / final_n)
                            for trial in data]
                     for verb in verbs}
+
+    if confusion:
+        conf_mats = defaultdict(dict)
+        for verb in verbs:
+            name = verb.__name__
+            for stat in ['tp', 'tn', 'fp', 'fn']:
+                conf_mats[name][stat] = np.mean(
+                    [data[trial][name + '_' + stat].values[-1]
+                     for trial in trials])
+        print(conf_mats)
 
     if plots:
         """
@@ -417,5 +429,5 @@ def smooth_data(data, smooth_weight=0.85):
 
 
 if __name__ == '__main__':
-    experiment_analysis('data/', verbs.get_all_verbs(),
+    experiment_analysis('../data-with-confusion/', verbs.get_all_verbs(),
                         plots=True)
