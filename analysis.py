@@ -55,12 +55,10 @@ def experiment_analysis(path, verbs, trials=range(60), plots=True,
     convergence_points = get_convergence_points(data, verbs, threshold)
     # TODO: no convergence points for this experiment? just final?
     # TODO: mean over last N=20 training steps?
-    final_n = 20
-    final_points = {verb: [(sum(data[trial][verb.__name__ +
-                                            '_accuracy'].values[-final_n:])
-                            / final_n)
-                           for trial in data]
-                    for verb in verbs}
+    final_n = 5
+    final_points = {verb: [
+        np.mean(data[trial][verb.__name__ + '_accuracy'].values[-final_n:])
+        for trial in data] for verb in verbs}
 
     if confusion:
         conf_mats = defaultdict(dict)
@@ -71,6 +69,8 @@ def experiment_analysis(path, verbs, trials=range(60), plots=True,
                 conf_mats[name][stat] = np.mean(
                     [data[trial][name + '_' + stat].values[-1]
                      for trial in trials])
+                print([data[trial][name + '_' + stat].values[-1] for trial in
+                       trials])
             all_dict[stat] = sum([conf_mats[key][stat]
                                   for key in conf_mats])
         conf_mats['all'] = all_dict
