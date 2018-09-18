@@ -63,14 +63,18 @@ def experiment_analysis(path, verbs, trials=range(60), plots=True,
     if confusion:
         conf_mats = defaultdict(dict)
         all_dict = defaultdict(float)
+        conf_dists = defaultdict(dict)
         for stat in ['tp', 'tn', 'fp', 'fn']:
+            fig, ax = plt.subplots()
             for verb in verbs:
                 name = verb.__name__
                 conf_mats[name][stat] = np.mean(
                     [data[trial][name + '_' + stat].values[-1]
                      for trial in trials])
-                print([data[trial][name + '_' + stat].values[-1] for trial in
-                       trials])
+                conf_dists[name][stat] = [data[trial][name + '_' + stat].values[-1]
+                                          for trial in trials]
+                sns.distplot(conf_dists[name][stat], ax=ax)
+            plt.show()
             all_dict[stat] = sum([conf_mats[key][stat]
                                   for key in conf_mats])
         conf_mats['all'] = all_dict

@@ -25,6 +25,8 @@ from models import basic_ffnn
 
 import tensorflow as tf
 
+tf.logging.set_verbosity(tf.logging.INFO)
+
 
 class EvalEarlyStopHook(tf.train.SessionRunHook):
     """Evaluates estimator during training and implements early stopping.
