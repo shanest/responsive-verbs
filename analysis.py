@@ -73,7 +73,9 @@ def experiment_analysis(path, verbs, trials=range(60), plots=True,
                      for trial in trials])
                 conf_dists[name][stat] = [data[trial][name + '_' + stat].values[-1]
                                           for trial in trials]
-                sns.distplot(conf_dists[name][stat], ax=ax)
+                sns.distplot(conf_dists[name][stat], ax=ax, label=name,
+                             axlabel=stat)
+            plt.legend()
             plt.show()
             all_dict[stat] = sum([conf_mats[key][stat]
                                   for key in conf_mats])
@@ -121,11 +123,16 @@ def experiment_analysis(path, verbs, trials=range(60), plots=True,
     pairs = list(it.combinations(verbs, 2))
     final_data = {}
     for pair in pairs:
+        print()
         print('{} vs. {}'.format(pair[0].__name__, pair[1].__name__))
         print(stats.ttest_rel(final_points[pair[0]],
                               final_points[pair[1]]))
         print(stats.ttest_rel(convergence_points[pair[0]],
                               convergence_points[pair[1]]))
+        for stat in ['tp', 'tn', 'fp', 'fn']:
+            print(stat)
+            print(stats.ttest_rel(conf_dists[pair[0].__name__][stat],
+                                  conf_dists[pair[1].__name__][stat]))
         pair_name = '{} - {}'.format(pair[0].__name__, pair[1].__name__)
         final_data[pair_name] = (
             np.array(final_points[pair[0]]) -
