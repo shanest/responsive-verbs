@@ -136,7 +136,8 @@ def run_trial(eparams, hparams, trial_num,
         predictions = pd.DataFrame(model.predict(input_fn=eval_input_fn))
         predictions['true_label'] = test_y
         predictions['correct'] = (predictions['class_ids'] ==
-                                  predictions['true_label'])
+                                  predictions['true_label']).astype(int)
+        predictions['dox_in_p'] = predictions['dox_in_p'].astype(int)
         predictions.to_csv(
             '{}/trial_{}_predictions.csv'.format(write_path, trial_num))
 

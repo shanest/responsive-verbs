@@ -37,6 +37,7 @@ def basic_ffnn(features, labels, mode, params):
 
     # -- inputs: [batch_size, item_size]
     inputs = features[params['input_feature']]
+    batch_size = tf.shape(inputs)[0]
     # -- labels: [batch_size]
     # -- verb_by_input: [batch_size, num_verbs]
     verb_by_input = inputs[:, -num_verbs:]
@@ -69,6 +70,28 @@ def basic_ffnn(features, labels, mode, params):
         dox_w = inputs[:, -(num_verbs + num_worlds):-num_verbs]
         # -- world: [batch_size, num_worlds]
         world = inputs[:, -(num_verbs + 2*num_worlds):-(num_verbs + num_worlds)]
+        # -- embedding: [batch_size, num_worlds*num_worlds]
+        embedding = inputs[:, :num_worlds**2]
+        # -- complements: [batch_size, num_worlds, num_worlds]
+        # complements[i][w] is embedding(w) for each w
+        complements = tf.stack(
+            tf.split(embedding, num_or_size_splits=num_worlds, axis=1),
+            axis=1)
+        # -- interrogative: [batch_size]
+        # whether or not the complement was interrogative
+        interrogative = tf.reduce_min(
+            tf.reduce_max(complements, axis=2), axis=1)
+        # -- dox_w_expand: [batch_size, num_world, num_worlds]
+        # TODO: document this dox_in_p logic!
+        dox_w_expand = tf.reshape(
+            tf.tile(dox_w, [1, num_worlds]),
+            [-1, num_worlds, num_worlds])
+        dox_w_mult = complements * dox_w_expand
+        dox_w_equal = tf.equal(dox_w_mult, dox_w_expand)
+        dox_in_p = tf.reduce_any(
+            tf.reduce_all(dox_w_equal, axis=2),
+            axis=1)
+
         predictions = {
             'class_ids': predicted_classes,
             'probabilities': tf.nn.softmax(logits),
@@ -76,10 +99,9 @@ def basic_ffnn(features, labels, mode, params):
             'verb': tf.gather(verb_names, verb_indices),
             # dox_w * w: all 0s unless w in dox_w, in which case there is a
             # single 1; so summing along the row gives the right verdict
-            'w_in_dox': tf.reduce_max(dox_w * world, axis=1)
-            # TODO: figure out how to do this: world contains index in column;
-            # get that index from _each row_ of dox_w...
-            # OR: how to sum / max along axis=1...
+            'w_in_dox': tf.reduce_max(dox_w * world, axis=1),
+            'interrogative': interrogative,
+            'dox_in_p': dox_in_p
         }
         return tf.estimator.EstimatorSpec(mode, predictions=predictions)
 
