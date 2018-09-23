@@ -122,16 +122,16 @@ def run_trial(eparams, hparams, trial_num,
 
     print('\n------ TRIAL {} -----'.format(trial_num))
 
-    # train and evaluate model together, using the Hook
-    model.train(input_fn=train_input_fn,
-                hooks=[EvalEarlyStopHook(model, eval_input_fn, csv_file,
-                                         eparams['eval_steps'],
-                                         eparams['stop_loss'])])
+    if eparams['train']:
+        # train and evaluate model together, using the Hook
+        model.train(input_fn=train_input_fn,
+                    hooks=[EvalEarlyStopHook(model, eval_input_fn, csv_file,
+                                             eparams['eval_steps'],
+                                             eparams['stop_loss'])])
 
 
 # DEFINE AN EXPERIMENT
 def main_experiment(eparams, hparams):
-
     for trial in xrange(eparams['num_trials']):
         run_trial(eparams, hparams, trial, eparams['write_dir'])
 
@@ -154,6 +154,9 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     eparams = {'write_dir': args.out_path,
+               'train': args.train,
+               'evaluate': args.evaluate,
+               'predict': args.predict,
                'num_trials': 60,
                'num_epochs': 15,
                'batch_size': 128,
@@ -173,4 +176,5 @@ if __name__ == '__main__':
                     'dropout': 0.1}]*4,
                'input_feature': 'x'}
 
+    # TODO: parameterize this more
     main_experiment(eparams, hparams)
