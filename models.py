@@ -38,6 +38,10 @@ def basic_ffnn(features, labels, mode, params):
     # -- inputs: [batch_size, item_size]
     inputs = features[params['input_feature']]
     # -- labels: [batch_size]
+    # -- verb_by_input: [batch_size, num_verbs]
+    verb_by_input = inputs[:, -num_verbs:]
+    # -- verb_indices: [batch_size]
+    verb_indices = tf.to_int32(tf.argmax(verb_by_input, axis=1))
 
     net = inputs
     for layer in params['layers']:
@@ -59,10 +63,13 @@ def basic_ffnn(features, labels, mode, params):
     predicted_classes = tf.argmax(logits, axis=1)
     if mode == tf.estimator.ModeKeys.PREDICT:
         # TODO: read dox_w in P, w in dox_w, decl vs int, etc, off the inputs
+        # TODO: get verb name using verb_indices and params['verbs']
+        verb_names = [v.__name__ for v in params['verbs']]
         predictions = {
             'class_ids': predicted_classes,
             'probabilities': tf.nn.softmax(logits),
             'logits': logits,
+            'verb': tf.gather(verb_names, verb_indices)
         }
         return tf.estimator.EstimatorSpec(mode, predictions=predictions)
 
@@ -78,10 +85,6 @@ def basic_ffnn(features, labels, mode, params):
     metrics = {'total_accuracy': accuracy}
 
     # per-verb metrics
-    # -- verb_by_input: [batch_size, num_verbs]
-    verb_by_input = inputs[:, -num_verbs:]
-    # -- verb_indices: [batch_size]
-    verb_indices = tf.to_int32(tf.argmax(verb_by_input, axis=1))
     # -- prediction_by_verb: a list num_verbs long
     # -- prediction_by_verb[i]: Tensor of predictions for verb i
     prediction_by_verb = tf.dynamic_partition(
