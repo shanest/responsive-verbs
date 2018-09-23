@@ -79,6 +79,8 @@ class EvalEarlyStopHook(tf.train.SessionRunHook):
 def run_trial(eparams, hparams, trial_num,
               write_path='/tmp/tf/verbs'):
 
+    print('\n------ TRIAL {} -----'.format(trial_num))
+
     tf.reset_default_graph()
 
     write_dir = '{}/trial_{}'.format(write_path, trial_num)
@@ -120,8 +122,6 @@ def run_trial(eparams, hparams, trial_num,
         y=test_y,
         batch_size=len(test_x),
         shuffle=False)
-
-    print('\n------ TRIAL {} -----'.format(trial_num))
 
     if eparams['train']:
         print('\n-- TRAINING --')
@@ -180,6 +180,7 @@ if __name__ == '__main__':
                'stop_loss': 0.02}
 
     hparams = {'verbs': verbs.get_all_verbs(),
+               'num_worlds': 16,  # needed for predictions
                'num_classes': 2,
                'layers': [
                    {'units': 128,

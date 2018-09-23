@@ -63,13 +63,23 @@ def basic_ffnn(features, labels, mode, params):
     predicted_classes = tf.argmax(logits, axis=1)
     if mode == tf.estimator.ModeKeys.PREDICT:
         # TODO: read dox_w in P, w in dox_w, decl vs int, etc, off the inputs
-        # TODO: get verb name using verb_indices and params['verbs']
         verb_names = [v.__name__ for v in params['verbs']]
+        num_worlds = params['num_worlds']
+        # -- dox_w: [batch_size, num_worlds]
+        dox_w = inputs[:, -(num_verbs + num_worlds):-num_verbs]
+        # -- world: [batch_size, num_worlds]
+        world = inputs[:, -(num_verbs + 2*num_worlds):-(num_verbs + num_worlds)]
         predictions = {
             'class_ids': predicted_classes,
             'probabilities': tf.nn.softmax(logits),
             'logits': logits,
-            'verb': tf.gather(verb_names, verb_indices)
+            'verb': tf.gather(verb_names, verb_indices),
+            # dox_w * w: all 0s unless w in dox_w, in which case there is a
+            # single 1; so summing along the row gives the right verdict
+            'w_in_dox': tf.reduce_max(dox_w * world, axis=1)
+            # TODO: figure out how to do this: world contains index in column;
+            # get that index from _each row_ of dox_w...
+            # OR: how to sum / max along axis=1...
         }
         return tf.estimator.EstimatorSpec(mode, predictions=predictions)
 
