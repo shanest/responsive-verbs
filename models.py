@@ -58,8 +58,9 @@ def basic_ffnn(features, labels, mode, params):
     # -- predicted_classes: [batch_size]
     predicted_classes = tf.argmax(logits, axis=1)
     if mode == tf.estimator.ModeKeys.PREDICT:
+        # TODO: read dox_w in P, w in dox_w, decl vs int, etc, off the inputs
         predictions = {
-            'class_ids': predicted_classes[:, tf.newaxis],
+            'class_ids': predicted_classes,
             'probabilities': tf.nn.softmax(logits),
             'logits': logits,
         }

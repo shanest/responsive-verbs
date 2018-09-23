@@ -24,6 +24,7 @@ import data
 from models import basic_ffnn
 
 import tensorflow as tf
+import pandas as pd
 
 tf.logging.set_verbosity(tf.logging.INFO)
 
@@ -123,11 +124,21 @@ def run_trial(eparams, hparams, trial_num,
     print('\n------ TRIAL {} -----'.format(trial_num))
 
     if eparams['train']:
+        print('\n-- TRAINING --')
         # train and evaluate model together, using the Hook
         model.train(input_fn=train_input_fn,
                     hooks=[EvalEarlyStopHook(model, eval_input_fn, csv_file,
                                              eparams['eval_steps'],
                                              eparams['stop_loss'])])
+
+    if eparams['predict']:
+        print('\n-- PREDICTING --')
+        predictions = pd.DataFrame(model.predict(input_fn=eval_input_fn))
+        predictions['true_label'] = test_y
+        predictions['correct'] = (predictions['class_ids'] ==
+                                  predictions['true_label'])
+        predictions.to_csv(
+            '{}/trial_{}_predictions.csv'.format(write_path, trial_num))
 
 
 # DEFINE AN EXPERIMENT
@@ -155,7 +166,7 @@ if __name__ == '__main__':
 
     eparams = {'write_dir': args.out_path,
                'train': args.train,
-               'evaluate': args.evaluate,
+               'evaluate': args.eval,
                'predict': args.predict,
                'num_trials': 60,
                'num_epochs': 15,
