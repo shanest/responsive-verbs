@@ -130,9 +130,32 @@ def run_trial(eparams, hparams, trial_num,
 
 
 # DEFINE AN EXPERIMENT
-def main_experiment(write_dir='data/'):
+def main_experiment(eparams, hparams):
 
-    eparams = {'num_epochs': 15,
+    for trial in xrange(eparams['num_trials']):
+        run_trial(eparams, hparams, trial, eparams['write_dir'])
+
+
+if __name__ == '__main__':
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--out_path', help='path to output', type=str,
+                        default='data/')
+    # what to do arguments
+    parser.add_argument('--no_train', dest='train', action='store_false')
+    parser.add_argument('--train', dest='train', action='store_true')
+    parser.set_defaults(train=True)
+    parser.add_argument('--no_eval', dest='eval', action='store_false')
+    parser.add_argument('--eval', dest='eval', action='store_true')
+    parser.set_defaults(eval=True)
+    parser.add_argument('--no_predict', dest='predict', action='store_false')
+    parser.add_argument('--predict', dest='predict', action='store_true')
+    parser.set_defaults(predict=False)
+    args = parser.parse_args()
+
+    eparams = {'write_dir': args.out_path,
+               'num_trials': 60,
+               'num_epochs': 15,
                'batch_size': 128,
                'num_worlds': 16,
                'max_cells': 4,
@@ -150,15 +173,4 @@ def main_experiment(write_dir='data/'):
                     'dropout': 0.1}]*4,
                'input_feature': 'x'}
 
-    for trial in xrange(60):
-        run_trial(eparams, hparams, trial, write_dir)
-
-
-if __name__ == '__main__':
-
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--out_path', help='path to output', type=str,
-                        default='data/')
-    args = parser.parse_args()
-
-    main_experiment(args.out_path)
+    main_experiment(eparams, hparams)
