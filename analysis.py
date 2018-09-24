@@ -46,7 +46,7 @@ def experiment_analysis(path, verbs, trials=range(60), plots=True,
         plots: whether to make plots or not
     """
 
-    threshold = 0.93
+    threshold = 0.925
     # read the data in
     data = util.read_trials_from_csv(path, trials)
     # FILTER OUT TRIALS WHERE RNN DID NOT LEARN
@@ -117,7 +117,7 @@ def experiment_analysis(path, verbs, trials=range(60), plots=True,
     make_plot(data, verbs, ylim=(0.8, 0.96), threshold=None,
               inset={'zoom': 3.25,
                      'xlim': (9000, 11200),
-                     'ylim': (0.93, 0.9525)},
+                     'ylim': (0.93, 0.9575)},
               ax=ax_acc)
 
     pairs = list(it.combinations(verbs, 2))
@@ -129,10 +129,11 @@ def experiment_analysis(path, verbs, trials=range(60), plots=True,
                               final_points[pair[1]]))
         print(stats.ttest_rel(convergence_points[pair[0]],
                               convergence_points[pair[1]]))
-        for stat in ['tp', 'tn', 'fp', 'fn']:
-            print(stat)
-            print(stats.ttest_rel(conf_dists[pair[0].__name__][stat],
-                                  conf_dists[pair[1].__name__][stat]))
+        if confusion:
+            for stat in ['tp', 'tn', 'fp', 'fn']:
+                print(stat)
+                print(stats.ttest_rel(conf_dists[pair[0].__name__][stat],
+                                      conf_dists[pair[1].__name__][stat]))
         pair_name = '{} - {}'.format(pair[0].__name__, pair[1].__name__)
         final_data[pair_name] = (
             np.array(final_points[pair[0]]) -
@@ -444,5 +445,5 @@ def smooth_data(data, smooth_weight=0.85):
 
 
 if __name__ == '__main__':
-    experiment_analysis('../data-with-confusion/', verbs.get_all_verbs(),
-                        plots=True)
+    experiment_analysis('../data-rms/', verbs.get_all_verbs(),
+                        plots=True, confusion=False)
