@@ -410,7 +410,6 @@ class Know(Verb):
         return veridical and dox_sub_w
 
 
-# TODO: replace BeCertain by BeWrong in all CSV files
 class BeCertain(Verb):
     """Verb meaning: \P \w: dox_w in P
     """
@@ -422,13 +421,15 @@ class BeCertain(Verb):
                                                                   max_cells)
 
         partition = fill_in_partition(partition, num_worlds)
-        cell = partition[np.random.randint(len(partition))]
+        which_cell = np.random.randint(len(partition))
+        cell = partition[which_cell]
         # add at least 1 element of cell to dox_w
         how_many = 1 + np.random.randint(len(cell))
         dox_w[np.random.choice(cell, [how_many], replace=False)] = 1
 
+        # TODO: was this a bug...?
         if is_declarative:
-            partition = (partition[np.random.randint(len(partition))],)
+            partition = (partition[which_cell],)
 
         return partition, world, dox_w
 
