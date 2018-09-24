@@ -442,6 +442,25 @@ def smooth_data(data, smooth_weight=0.85):
     return smoothed
 
 
+def predictions_analysis(path, verbs, trials=range(60)):
+    data = {}
+    for trial in trials:
+        data[trial] = pd.DataFrame.from_csv(
+            '{}/trial_{}_predictions.csv'.format(path, trial))
+        data[trial]['trial'] = trial
+    all_data = pd.concat([data[trial] for trial in trials], ignore_index=True)
+    del data  # free up memory
+
+    for verb in verbs:
+        name = verb.__name__
+        print('\n' + name)
+        by_verb = all_data[all_data['verb'] == name]
+        verb_decl = by_verb[by_verb['interrogative'] == 0]
+        verb_int = by_verb[by_verb['interrogative'] == 1]
+        print(verb_decl['correct'].sum() / verb_decl['correct'].size)
+        print(verb_int['correct'].sum() / verb_int['correct'].size)
+
+
 if __name__ == '__main__':
     experiment_analysis('data/', verbs.get_all_verbs(),
                         plots=True, confusion=True)
