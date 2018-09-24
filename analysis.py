@@ -457,8 +457,24 @@ def predictions_analysis(path, verbs, trials=range(60)):
         by_verb = all_data[all_data['verb'] == name]
         verb_decl = by_verb[by_verb['interrogative'] == 0]
         verb_int = by_verb[by_verb['interrogative'] == 1]
-        print(verb_decl['correct'].sum() / verb_decl['correct'].size)
-        print(verb_int['correct'].sum() / verb_int['correct'].size)
+        print('decl: {}'.format(verb_decl['correct'].sum() /
+                                verb_decl['correct'].size))
+        print('int: {}'.format(verb_int['correct'].sum() /
+                               verb_int['correct'].size))
+
+        verb_dox_in = by_verb[by_verb['dox_in_p'] == 1]
+        verb_dox_notin = by_verb[by_verb['dox_in_p'] == 0]
+        print('dox_in: {}'.format(verb_dox_in['correct'].sum() /
+                                  verb_dox_in['correct'].size))
+        print('dox_notin: {}'.format(verb_dox_notin['correct'].sum() /
+                                     verb_dox_notin['correct'].size))
+
+        verb_w_in = by_verb[by_verb['w_in_dox'] == 1]
+        verb_w_notin = by_verb[by_verb['w_in_dox'] == 0]
+        print('w_in: {}'.format(verb_w_in['correct'].sum() /
+                                verb_w_in['correct'].size))
+        print('w_notin: {}'.format(verb_w_notin['correct'].sum() /
+                                   verb_w_notin['correct'].size))
 
 
 if __name__ == '__main__':
