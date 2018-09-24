@@ -104,21 +104,9 @@ def experiment_analysis(path, verbs, trials=range(60), plots=True,
         # plt.xlim((10000, 11200))
         plt.show()
         """
-
         # make plots
         make_boxplots(convergence_points, verbs)
         make_boxplots(final_points, verbs)
-        # make_barplots(convergence_points, verbs)
-
-    gs = gridspec.GridSpec(2, 3)
-
-    ax_acc = plt.subplot(gs[:, :-1])
-
-    make_plot(data, verbs, ylim=(0.8, 0.96), threshold=None,
-              inset={'zoom': 3.25,
-                     'xlim': (9000, 11200),
-                     'ylim': (0.93, 0.9575)},
-              ax=ax_acc)
 
     pairs = list(it.combinations(verbs, 2))
     final_data = {}
@@ -139,28 +127,38 @@ def experiment_analysis(path, verbs, trials=range(60), plots=True,
             np.array(final_points[pair[0]]) -
             np.array(final_points[pair[1]]))
 
-    ax_dists1 = plt.subplot(gs[0, -1])
-    for pair in pairs:
-        pair_name = '{} - {}'.format(pair[0].__name__, pair[1].__name__)
-        if pair[0].__name__ == 'Know':
-            sns.distplot(final_data[pair_name], rug=True,
-                         label=pair_name,
-                         ax=ax_dists1)
-    plt.legend()
+    if plots:
+        # TODO: re-factor combo_plot into new method
+        gs = gridspec.GridSpec(2, 3)
+        ax_acc = plt.subplot(gs[:, :-1])
+        make_plot(data, verbs, ylim=(0.8, 0.96), threshold=None,
+                  inset={'zoom': 3.25,
+                         'xlim': (9000, 11200),
+                         'ylim': (0.93, 0.9575)},
+                  ax=ax_acc)
 
-    ax_dists2 = plt.subplot(gs[1, -1])
-    for pair in pairs:
-        pair_name = '{} - {}'.format(pair[0].__name__, pair[1].__name__)
-        if pair[0].__name__ == 'BeCertain':
-            sns.distplot(final_data[pair_name], rug=True,
-                         label=pair_name,
-                         ax=ax_dists2)
-    plt.legend()
-    plt.tight_layout()
-    plt.show()
+        ax_dists1 = plt.subplot(gs[0, -1])
+        for pair in pairs:
+            pair_name = '{} - {}'.format(pair[0].__name__, pair[1].__name__)
+            if pair[0].__name__ == 'Know':
+                sns.distplot(final_data[pair_name], rug=True,
+                             label=pair_name,
+                             ax=ax_dists1)
+        plt.legend()
 
-    sns.barplot(data=pd.DataFrame(final_data))
-    plt.show()
+        ax_dists2 = plt.subplot(gs[1, -1])
+        for pair in pairs:
+            pair_name = '{} - {}'.format(pair[0].__name__, pair[1].__name__)
+            if pair[0].__name__ == 'BeCertain':
+                sns.distplot(final_data[pair_name], rug=True,
+                             label=pair_name,
+                             ax=ax_dists2)
+        plt.legend()
+        plt.tight_layout()
+        plt.show()
+
+        sns.barplot(data=pd.DataFrame(final_data))
+        plt.show()
 
 
 def remove_bad_trials(data, threshold=0.95):
@@ -445,5 +443,5 @@ def smooth_data(data, smooth_weight=0.85):
 
 
 if __name__ == '__main__':
-    experiment_analysis('../data-rms/', verbs.get_all_verbs(),
-                        plots=True, confusion=False)
+    experiment_analysis('data/', verbs.get_all_verbs(),
+                        plots=True, confusion=True)
