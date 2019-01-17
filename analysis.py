@@ -38,7 +38,7 @@ COLORS = ['xkcd:forest green', 'xkcd:blue green',
 
 
 def experiment_analysis(path, verbs, trials=range(60), plots=True,
-                        confusion=True):
+                        confusion=True, filename=None):
     """Prints statistical tests and makes plots for experiment one.
 
     Args:
@@ -129,6 +129,7 @@ def experiment_analysis(path, verbs, trials=range(60), plots=True,
 
     if plots:
         # TODO: re-factor combo_plot into new method
+        plt.figure(figsize=(18, 12))
         gs = gridspec.GridSpec(2, 3)
         ax_acc = plt.subplot(gs[:, :-1])
         make_plot(data, verbs, ylim=(0.8, 0.96), threshold=None,
@@ -155,7 +156,10 @@ def experiment_analysis(path, verbs, trials=range(60), plots=True,
                              ax=ax_dists2)
         plt.legend()
         plt.tight_layout()
-        plt.show()
+        if filename:
+            plt.savefig(filename, bbox_inches='tight')
+        else:
+            plt.show()
 
         sns.barplot(data=pd.DataFrame(final_data))
         plt.show()
@@ -317,7 +321,7 @@ def make_plot(data, verbs, ylim=None, xlim=None, threshold=None, loc=2,
         ax.plot(longest_x,
                 medians_by_verb[idx],
                 COLORS[idx],
-                label=verbs[idx].__name__,
+                label='P{}: {}'.format(idx, verbs[idx].__name__),
                 linewidth=2.75)
 
     if threshold:
@@ -333,7 +337,7 @@ def make_plot(data, verbs, ylim=None, xlim=None, threshold=None, loc=2,
         ax.set_xlim(xlim)
 
     if loc:
-        ax.legend(loc=loc)
+        ax.legend(loc=loc, fontsize=24)
 
     if inset:
         axins = zoomed_inset_axes(ax, inset['zoom'], loc=4)
@@ -479,4 +483,4 @@ def predictions_analysis(path, verbs, trials=range(60)):
 
 if __name__ == '__main__':
     experiment_analysis('data/', verbs.get_all_verbs(),
-                        plots=True, confusion=True)
+                        plots=True, confusion=True, filename='data/combo_plot.png')
