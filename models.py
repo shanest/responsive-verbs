@@ -50,7 +50,9 @@ def basic_ffnn(features, labels, mode, params):
     net = inputs
     for layer in params["layers"]:
         # TODO: dropout?
-        net = tf.layers.dense(net, units=layer["units"], activation=layer["activation"])
+        net = tf.layers.dense(
+            net, units=layer["units"], activation=getattr(tf.nn, layer["activation"])
+        )
         if layer["dropout"]:
             net = tf.layers.dropout(net, rate=layer["dropout"], training=training)
         # -- net: [batch_size, params['layers'][-1]['units']]
@@ -122,7 +124,7 @@ def basic_ffnn(features, labels, mode, params):
     label_by_verb = tf.dynamic_partition(labels, verb_indices, num_verbs)
     for idx in range(num_verbs):
         # TODO: loss by verb as well?
-        verb_name = params["verbs"][idx].__name__
+        verb_name = params["verbs"][idx]
         acc_key = "{}_accuracy".format(verb_name)
         metrics[acc_key] = tf.metrics.accuracy(
             labels=label_by_verb[idx], predictions=prediction_by_verb[idx]

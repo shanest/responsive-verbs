@@ -18,13 +18,14 @@ from __future__ import print_function
 from collections import defaultdict
 import argparse
 
+import tensorflow as tf
+import pandas as pd
+import yaml
+
 import verbs
 import util
 import data
 from models import basic_ffnn
-
-import tensorflow as tf
-import pandas as pd
 
 tf.logging.set_verbosity(tf.logging.INFO)
 
@@ -75,7 +76,7 @@ class EvalEarlyStopHook(tf.train.SessionRunHook):
         util.dict_to_csv(self._results, self._filename)
 
 
-def run_trial(eparams, hparams, trial_num, write_path="/tmp/tf/verbs"):
+def run_trial(params, trial_num, write_path="/tmp/tf/verbs"):
 
     print("\n------ TRIAL {} -----".format(trial_num))
 
@@ -86,24 +87,24 @@ def run_trial(eparams, hparams, trial_num, write_path="/tmp/tf/verbs"):
 
     # BUILD MODEL
     run_config = tf.estimator.RunConfig(
-        save_checkpoints_steps=eparams["eval_steps"],
+        save_checkpoints_steps=params["eval_steps"],
         save_checkpoints_secs=None,
-        save_summary_steps=eparams["eval_steps"],
+        save_summary_steps=params["eval_steps"],
     )
 
     # TODO: moar models?
     model = tf.estimator.Estimator(
-        model_fn=basic_ffnn, params=hparams, model_dir=write_dir, config=run_config
+        model_fn=basic_ffnn, params=params, model_dir=write_dir, config=run_config
     )
 
     # GENERATE DATA
     generator = data.DataGenerator(
-        hparams["verbs"],
-        eparams["num_worlds"],
-        eparams["max_cells"],
-        eparams["items_per_bin"],
-        eparams["tries_per_bin"],
-        eparams["test_bin_size"],
+        params["verbs"],
+        params["num_worlds"],
+        params["max_cells"],
+        params["items_per_bin"],
+        params["tries_per_bin"],
+        params["test_bin_size"],
     )
 
     train_x, train_y = generator.get_training_data()
@@ -111,22 +112,22 @@ def run_trial(eparams, hparams, trial_num, write_path="/tmp/tf/verbs"):
 
     # input fn for training
     train_input_fn = tf.estimator.inputs.numpy_input_fn(
-        x={hparams["input_feature"]: train_x},
+        x={params["input_feature"]: train_x},
         y=train_y,
-        batch_size=eparams["batch_size"],
-        num_epochs=eparams["num_epochs"],
+        batch_size=params["batch_size"],
+        num_epochs=params["num_epochs"],
         shuffle=True,
     )
 
     # input fn for evaluation
     eval_input_fn = tf.estimator.inputs.numpy_input_fn(
-        x={hparams["input_feature"]: test_x},
+        x={params["input_feature"]: test_x},
         y=test_y,
         batch_size=len(test_x),
         shuffle=False,
     )
 
-    if eparams["train"]:
+    if params["train"]:
         print("\n-- TRAINING --")
         # train and evaluate model together, using the Hook
         model.train(
@@ -136,13 +137,13 @@ def run_trial(eparams, hparams, trial_num, write_path="/tmp/tf/verbs"):
                     model,
                     eval_input_fn,
                     csv_file,
-                    eparams["eval_steps"],
-                    eparams["stop_loss"],
+                    params["eval_steps"],
+                    params["stop_loss"],
                 )
             ],
         )
 
-    if eparams["predict"]:
+    if params["predict"]:
         print("\n-- PREDICTING --")
         predictions = pd.DataFrame(model.predict(input_fn=eval_input_fn))
         predictions["true_label"] = test_y
@@ -154,15 +155,14 @@ def run_trial(eparams, hparams, trial_num, write_path="/tmp/tf/verbs"):
 
 
 # DEFINE AN EXPERIMENT
-def main_experiment(eparams, hparams):
-    for trial in range(eparams["num_trials"]):
-        run_trial(eparams, hparams, trial, eparams["write_dir"])
+def run_experiment(params):
+    for trial in range(params["num_trials"]):
+        run_trial(params, trial, params["write_dir"])
 
 
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("--out_path", help="path to output", type=str, default="data/")
     # what to do arguments
     parser.add_argument("--no_train", dest="train", action="store_false")
     parser.add_argument("--train", dest="train", action="store_true")
@@ -173,32 +173,15 @@ if __name__ == "__main__":
     parser.add_argument("--no_predict", dest="predict", action="store_false")
     parser.add_argument("--predict", dest="predict", action="store_true")
     parser.set_defaults(predict=False)
-    args = parser.parse_args()
+    # get experiment parameters
+    parser.add_argument("--config", type=str)
+    # get parser args as a dict
+    args = vars(parser.parse_args())
 
-    eparams = {
-        "write_dir": args.out_path,
-        "train": args.train,
-        "evaluate": args.eval,
-        "predict": args.predict,
-        "num_trials": 60,
-        "num_epochs": 15,
-        "batch_size": 128,
-        "num_worlds": 16,
-        "max_cells": 4,
-        "items_per_bin": 16000,
-        "tries_per_bin": 60000,
-        "test_bin_size": 4000,
-        "eval_steps": 50,
-        "stop_loss": 0.02,
-    }
+    # TODO: factor out read config logic into util?
+    with open(args["config"], "r") as config_file:
+        args.update(yaml.load(config_file))
 
-    hparams = {
-        "verbs": verbs.get_all_verbs(),
-        "num_worlds": 16,  # needed for predictions
-        "num_classes": 2,
-        "layers": [{"units": 128, "activation": tf.nn.elu, "dropout": 0.1}] * 4,
-        "input_feature": "x",
-    }
+    args["write_dir"] = args["name"] + "/data"
 
-    # TODO: parameterize this more
-    main_experiment(eparams, hparams)
+    run_experiment(args)
