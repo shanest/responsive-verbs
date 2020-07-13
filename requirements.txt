@@ -1,2 +1,2 @@
 tensorflow==1.15
-pandas
+pandas==1.0.5

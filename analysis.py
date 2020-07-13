@@ -20,7 +20,8 @@ import itertools as it
 import numpy as np
 import scipy.stats as stats
 import matplotlib as mpl
-mpl.use('TkAgg')
+
+mpl.use("TkAgg")
 
 from matplotlib import pyplot as plt
 from mpl_toolkits.axes_grid1.inset_locator import zoomed_inset_axes
@@ -33,12 +34,12 @@ import util
 import verbs
 
 
-COLORS = ['xkcd:forest green', 'xkcd:blue green',
-          'xkcd:light orange', 'xkcd:peach']
+COLORS = ["xkcd:forest green", "xkcd:blue green", "xkcd:light orange", "xkcd:peach"]
 
 
-def experiment_analysis(path, verbs, trials=range(60), plots=True,
-                        confusion=True, filename=None):
+def experiment_analysis(
+    path, verbs, trials=range(60), plots=True, confusion=True, filename=None
+):
     """Prints statistical tests and makes plots for experiment one.
 
     Args:
@@ -56,30 +57,33 @@ def experiment_analysis(path, verbs, trials=range(60), plots=True,
     # TODO: no convergence points for this experiment? just final?
     # TODO: mean over last N=20 training steps?
     final_n = 5
-    final_points = {verb: [
-        np.mean(data[trial][verb.__name__ + '_accuracy'].values[-final_n:])
-        for trial in data] for verb in verbs}
+    final_points = {
+        verb: [
+            np.mean(data[trial][verb.__name__ + "_accuracy"].values[-final_n:])
+            for trial in data
+        ]
+        for verb in verbs
+    }
 
     if confusion:
         conf_mats = defaultdict(dict)
         all_dict = defaultdict(float)
         conf_dists = defaultdict(dict)
-        for stat in ['tp', 'tn', 'fp', 'fn']:
+        for stat in ["tp", "tn", "fp", "fn"]:
             fig, ax = plt.subplots()
             for verb in verbs:
                 name = verb.__name__
                 conf_mats[name][stat] = np.mean(
-                    [data[trial][name + '_' + stat].values[-1]
-                     for trial in trials])
-                conf_dists[name][stat] = [data[trial][name + '_' + stat].values[-1]
-                                          for trial in trials]
-                sns.distplot(conf_dists[name][stat], ax=ax, label=name,
-                             axlabel=stat)
+                    [data[trial][name + "_" + stat].values[-1] for trial in trials]
+                )
+                conf_dists[name][stat] = [
+                    data[trial][name + "_" + stat].values[-1] for trial in trials
+                ]
+                sns.distplot(conf_dists[name][stat], ax=ax, label=name, axlabel=stat)
             plt.legend()
             plt.show()
-            all_dict[stat] = sum([conf_mats[key][stat]
-                                  for key in conf_mats])
-        conf_mats['all'] = all_dict
+            all_dict[stat] = sum([conf_mats[key][stat] for key in conf_mats])
+        conf_mats["all"] = all_dict
         print(conf_mats)
 
     if plots:
@@ -112,52 +116,57 @@ def experiment_analysis(path, verbs, trials=range(60), plots=True,
     final_data = {}
     for pair in pairs:
         print()
-        print('{} vs. {}'.format(pair[0].__name__, pair[1].__name__))
-        print(stats.ttest_rel(final_points[pair[0]],
-                              final_points[pair[1]]))
-        print(stats.ttest_rel(convergence_points[pair[0]],
-                              convergence_points[pair[1]]))
+        print("{} vs. {}".format(pair[0].__name__, pair[1].__name__))
+        print(stats.ttest_rel(final_points[pair[0]], final_points[pair[1]]))
+        print(stats.ttest_rel(convergence_points[pair[0]], convergence_points[pair[1]]))
         if confusion:
-            for stat in ['tp', 'tn', 'fp', 'fn']:
+            for stat in ["tp", "tn", "fp", "fn"]:
                 print(stat)
-                print(stats.ttest_rel(conf_dists[pair[0].__name__][stat],
-                                      conf_dists[pair[1].__name__][stat]))
-        pair_name = '{} - {}'.format(pair[0].__name__, pair[1].__name__)
-        final_data[pair_name] = (
-            np.array(final_points[pair[0]]) -
-            np.array(final_points[pair[1]]))
+                print(
+                    stats.ttest_rel(
+                        conf_dists[pair[0].__name__][stat],
+                        conf_dists[pair[1].__name__][stat],
+                    )
+                )
+        pair_name = "{} - {}".format(pair[0].__name__, pair[1].__name__)
+        final_data[pair_name] = np.array(final_points[pair[0]]) - np.array(
+            final_points[pair[1]]
+        )
 
     if plots:
         # TODO: re-factor combo_plot into new method
         plt.figure(figsize=(18, 12))
         gs = gridspec.GridSpec(2, 3)
         ax_acc = plt.subplot(gs[:, :-1])
-        make_plot(data, verbs, ylim=(0.8, 0.96), threshold=None,
-                  inset={'zoom': 3.25,
-                         'xlim': (9000, 11200),
-                         'ylim': (0.93, 0.9575)},
-                  ax=ax_acc)
+        make_plot(
+            data,
+            verbs,
+            ylim=(0.8, 0.96),
+            threshold=None,
+            inset={"zoom": 3.25, "xlim": (9000, 11200), "ylim": (0.93, 0.9575)},
+            ax=ax_acc,
+        )
 
         ax_dists1 = plt.subplot(gs[0, -1])
         for pair in pairs:
-            pair_name = '{} - {}'.format(pair[0].__name__, pair[1].__name__)
-            if pair[0].__name__ == 'Know':
-                sns.distplot(final_data[pair_name], rug=True,
-                             label=pair_name,
-                             ax=ax_dists1)
+            pair_name = "{} - {}".format(pair[0].__name__, pair[1].__name__)
+            if pair[0].__name__ == "Know":
+                sns.distplot(
+                    final_data[pair_name], rug=True, label=pair_name, ax=ax_dists1
+                )
         plt.legend()
 
         ax_dists2 = plt.subplot(gs[1, -1])
         for pair in pairs:
-            pair_name = '{} - {}'.format(pair[0].__name__, pair[1].__name__)
-            if pair[0].__name__ == 'BeCertain':
-                sns.distplot(final_data[pair_name], rug=True,
-                             label=pair_name,
-                             ax=ax_dists2)
+            pair_name = "{} - {}".format(pair[0].__name__, pair[1].__name__)
+            if pair[0].__name__ == "BeCertain":
+                sns.distplot(
+                    final_data[pair_name], rug=True, label=pair_name, ax=ax_dists2
+                )
         plt.legend()
         plt.tight_layout()
         if filename:
-            plt.savefig(filename, bbox_inches='tight')
+            plt.savefig(filename, bbox_inches="tight")
         else:
             plt.show()
 
@@ -170,14 +179,12 @@ def remove_bad_trials(data, threshold=0.95):
     accuracy never converged to a value close to 1.  The bad trials are
     deleted from data, but nothing is returned.
     """
-    accuracies = [data[key]['total_accuracy'].values for key in data]
+    accuracies = [data[key]["total_accuracy"].values for key in data]
     forward_accs = [forward_means(accs) for accs in accuracies]
-    threshold_pos = [first_above_threshold(accs, threshold)
-                     for accs in forward_accs]
+    threshold_pos = [first_above_threshold(accs, threshold) for accs in forward_accs]
     # a trial is bad if the forward mean never hit 0.99
-    bad_trials = [idx for idx, thresh in enumerate(threshold_pos)
-                  if thresh is None]
-    print('Number of bad trials: {}'.format(len(bad_trials)))
+    bad_trials = [idx for idx, thresh in enumerate(threshold_pos) if thresh is None]
+    print("Number of bad trials: {}".format(len(bad_trials)))
     for trial in bad_trials:
         del data[trial]
 
@@ -197,10 +204,12 @@ def get_convergence_points(data, verbs, threshold):
     for trial in data.keys():
         for verb in verbs:
             convergence_points[verb].append(
-                data[trial]['global_step'][
+                data[trial]["global_step"][
                     convergence_point(
-                        data[trial][verb.__name__ + '_accuracy'].values,
-                        threshold)])
+                        data[trial][verb.__name__ + "_accuracy"].values, threshold
+                    )
+                ]
+            )
     return convergence_points
 
 
@@ -232,9 +241,13 @@ def forward_means(arr, window_size=100):
     Returns:
         a list, of same length as arr, with the forward means
     """
-    return [(sum(arr[idx:min(idx+window_size, len(arr))])
-             / min(window_size, len(arr)-idx))
-            for idx in range(len(arr))]
+    return [
+        (
+            sum(arr[idx : min(idx + window_size, len(arr))])
+            / min(window_size, len(arr) - idx)
+        )
+        for idx in range(len(arr))
+    ]
 
 
 def first_above_threshold(arr, threshold):
@@ -250,7 +263,7 @@ def first_above_threshold(arr, threshold):
     means = forward_means(arr)
     for idx in range(len(arr)):
         if arr[idx] > threshold and means[idx] > threshold:
-        # if means[idx] > threshold:
+            # if means[idx] > threshold:
             return idx
     return None
 
@@ -281,15 +294,16 @@ def get_max_steps(data):
     max_val = None
     max_len = 0
     for key in data.keys():
-        new_len = len(data[key]['global_step'].values)
+        new_len = len(data[key]["global_step"].values)
         if new_len > max_len:
             max_len = new_len
-            max_val = data[key]['global_step'].values
+            max_val = data[key]["global_step"].values
     return max_val
 
 
-def make_plot(data, verbs, ylim=None, xlim=None, threshold=None, loc=2,
-              inset=None, ax=None):
+def make_plot(
+    data, verbs, ylim=None, xlim=None, threshold=None, loc=2, inset=None, ax=None
+):
     """Makes a line plot of the accuracy of trials by quantifier, color coded,
     and with the medians also plotted.
 
@@ -305,29 +319,38 @@ def make_plot(data, verbs, ylim=None, xlim=None, threshold=None, loc=2,
 
     trials_by_verb = [[] for _ in range(len(verbs))]
     for trial in data:
-        steps = data[trial]['global_step'].values
+        steps = data[trial]["global_step"].values
         for idx in range(len(verbs)):
-            trials_by_verb[idx].append(smooth_data(
-                data[trial][verbs[idx].__name__ + '_accuracy'].values))
-            ax.plot(steps, trials_by_verb[idx][-1],
-                     COLORS[idx], alpha=0.2)
+            trials_by_verb[idx].append(
+                smooth_data(data[trial][verbs[idx].__name__ + "_accuracy"].values)
+            )
+            ax.plot(steps, trials_by_verb[idx][-1], COLORS[idx], alpha=0.2)
 
     # plot median lines
-    medians_by_verb = [get_median_diff_lengths(trials_by_verb[idx])
-                       for idx in range(len(trials_by_verb))]
+    medians_by_verb = [
+        get_median_diff_lengths(trials_by_verb[idx])
+        for idx in range(len(trials_by_verb))
+    ]
     # get x-axis of longest trial
     longest_x = get_max_steps(data)
     for idx in range(len(verbs)):
-        ax.plot(longest_x,
-                medians_by_verb[idx],
-                COLORS[idx],
-                label='P{}: {}'.format(idx, verbs[idx].__name__),
-                linewidth=2.75)
+        ax.plot(
+            longest_x,
+            medians_by_verb[idx],
+            COLORS[idx],
+            label="P{}: {}".format(idx, verbs[idx].__name__),
+            linewidth=2.75,
+        )
 
     if threshold:
         max_x = max([len(ls) for ls in medians_by_verb])
-        ax.plot(longest_x, [threshold for _ in range(max_x)],
-                linestyle='dashed', color='grey', alpha=0.5)
+        ax.plot(
+            longest_x,
+            [threshold for _ in range(max_x)],
+            linestyle="dashed",
+            color="grey",
+            alpha=0.5,
+        )
 
     if ylim:
         ax.set_ylim(ylim)
@@ -340,20 +363,21 @@ def make_plot(data, verbs, ylim=None, xlim=None, threshold=None, loc=2,
         ax.legend(loc=loc, fontsize=24)
 
     if inset:
-        axins = zoomed_inset_axes(ax, inset['zoom'], loc=4)
+        axins = zoomed_inset_axes(ax, inset["zoom"], loc=4)
         for trial in data:
-            steps = data[trial]['global_step'].values
+            steps = data[trial]["global_step"].values
             for idx in range(len(verbs)):
-                axins.plot(steps, trials_by_verb[idx][trial],
-                           COLORS[idx], alpha=0.25)
+                axins.plot(steps, trials_by_verb[idx][trial], COLORS[idx], alpha=0.25)
         for idx in range(len(verbs)):
-            axins.plot(longest_x,
-                     medians_by_verb[idx],
-                     COLORS[idx],
-                     label=verbs[idx].__name__,
-                     linewidth=2.5)
-        axins.set_xlim(inset['xlim'])
-        axins.set_ylim(inset['ylim'])
+            axins.plot(
+                longest_x,
+                medians_by_verb[idx],
+                COLORS[idx],
+                label=verbs[idx].__name__,
+                linewidth=2.5,
+            )
+        axins.set_xlim(inset["xlim"])
+        axins.set_ylim(inset["ylim"])
         axins.set_xticks([])
         axins.set_yticks([])
 
@@ -375,9 +399,11 @@ def get_median_diff_lengths(trials):
     max_len = np.max([len(trial) for trial in trials])
     # pad trials with NaN values to length of longest trial
     trials = np.asarray(
-        [np.pad(trial, (0, max_len - len(trial)),
-                'constant', constant_values=np.nan)
-         for trial in trials])
+        [
+            np.pad(trial, (0, max_len - len(trial)), "constant", constant_values=np.nan)
+            for trial in trials
+        ]
+    )
     return np.nanmedian(trials, axis=0)
 
 
@@ -389,7 +415,7 @@ def make_boxplots(convergence_points, verbs):
         quants: names of quantifiers
     """
     plt.boxplot([convergence_points[verb] for verb in verbs])
-    plt.xticks(range(1, len(verbs)+1), [verb.__name__ for verb in verbs])
+    plt.xticks(range(1, len(verbs) + 1), [verb.__name__ for verb in verbs])
     plt.show()
 
 
@@ -403,26 +429,37 @@ def make_barplots(convergence_points, quants):
     pairs = list(it.combinations(quants, 2))
     assert len(pairs) <= len(COLORS)
 
-    diffs = {pair: diff(convergence_points[pair[0]],
-                        convergence_points[pair[1]])
-             for pair in pairs}
+    diffs = {
+        pair: diff(convergence_points[pair[0]], convergence_points[pair[1]])
+        for pair in pairs
+    }
     means = {pair: np.mean(diffs[pair]) for pair in pairs}
     stds = {pair: np.std(diffs[pair]) for pair in pairs}
-    intervals = {pair: stats.norm.interval(
-        0.95, loc=means[pair],
-        scale=stds[pair]/np.sqrt(len(diffs[pair])))
-        for pair in pairs}
+    intervals = {
+        pair: stats.norm.interval(
+            0.95, loc=means[pair], scale=stds[pair] / np.sqrt(len(diffs[pair]))
+        )
+        for pair in pairs
+    }
 
     # plotting info
     index = np.arange(len(pairs))
     bar_width = 0.75
     # reshape intervals to be fed to pyplot
-    yerrs = [[means[pair] - intervals[pair][0] for pair in pairs],
-             [intervals[pair][1] - means[pair] for pair in pairs]]
+    yerrs = [
+        [means[pair] - intervals[pair][0] for pair in pairs],
+        [intervals[pair][1] - means[pair] for pair in pairs],
+    ]
 
-    plt.bar(index, [means[pair] for pair in pairs], bar_width, yerr=yerrs,
-            color=[COLORS[idx] for idx in range(len(pairs))],
-            ecolor='black', align='center')
+    plt.bar(
+        index,
+        [means[pair] for pair in pairs],
+        bar_width,
+        yerr=yerrs,
+        color=[COLORS[idx] for idx in range(len(pairs))],
+        ecolor="black",
+        align="center",
+    )
     plt.xticks(index, pairs)
     plt.show()
 
@@ -441,7 +478,7 @@ def smooth_data(data, smooth_weight=0.85):
     prev = data[0]
     smoothed = []
     for point in data:
-        smoothed.append(prev*smooth_weight + point*(1-smooth_weight))
+        smoothed.append(prev * smooth_weight + point * (1 - smooth_weight))
         prev = smoothed[-1]
     return smoothed
 
@@ -450,37 +487,50 @@ def predictions_analysis(path, verbs, trials=range(60)):
     data = {}
     for trial in trials:
         data[trial] = pd.DataFrame.from_csv(
-            '{}/trial_{}_predictions.csv'.format(path, trial))
-        data[trial]['trial'] = trial
+            "{}/trial_{}_predictions.csv".format(path, trial)
+        )
+        data[trial]["trial"] = trial
     all_data = pd.concat([data[trial] for trial in trials], ignore_index=True)
     del data  # free up memory
 
     for verb in verbs:
         name = verb.__name__
-        print('\n' + name)
-        by_verb = all_data[all_data['verb'] == name]
-        verb_decl = by_verb[by_verb['interrogative'] == 0]
-        verb_int = by_verb[by_verb['interrogative'] == 1]
-        print('decl: {}'.format(verb_decl['correct'].sum() /
-                                verb_decl['correct'].size))
-        print('int: {}'.format(verb_int['correct'].sum() /
-                               verb_int['correct'].size))
+        print("\n" + name)
+        by_verb = all_data[all_data["verb"] == name]
+        verb_decl = by_verb[by_verb["interrogative"] == 0]
+        verb_int = by_verb[by_verb["interrogative"] == 1]
+        print("decl: {}".format(verb_decl["correct"].sum() / verb_decl["correct"].size))
+        print("int: {}".format(verb_int["correct"].sum() / verb_int["correct"].size))
 
-        verb_dox_in = by_verb[by_verb['dox_in_p'] == 1]
-        verb_dox_notin = by_verb[by_verb['dox_in_p'] == 0]
-        print('dox_in: {}'.format(verb_dox_in['correct'].sum() /
-                                  verb_dox_in['correct'].size))
-        print('dox_notin: {}'.format(verb_dox_notin['correct'].sum() /
-                                     verb_dox_notin['correct'].size))
+        verb_dox_in = by_verb[by_verb["dox_in_p"] == 1]
+        verb_dox_notin = by_verb[by_verb["dox_in_p"] == 0]
+        print(
+            "dox_in: {}".format(
+                verb_dox_in["correct"].sum() / verb_dox_in["correct"].size
+            )
+        )
+        print(
+            "dox_notin: {}".format(
+                verb_dox_notin["correct"].sum() / verb_dox_notin["correct"].size
+            )
+        )
 
-        verb_w_in = by_verb[by_verb['w_in_dox'] == 1]
-        verb_w_notin = by_verb[by_verb['w_in_dox'] == 0]
-        print('w_in: {}'.format(verb_w_in['correct'].sum() /
-                                verb_w_in['correct'].size))
-        print('w_notin: {}'.format(verb_w_notin['correct'].sum() /
-                                   verb_w_notin['correct'].size))
+        verb_w_in = by_verb[by_verb["w_in_dox"] == 1]
+        verb_w_notin = by_verb[by_verb["w_in_dox"] == 0]
+        print("w_in: {}".format(verb_w_in["correct"].sum() / verb_w_in["correct"].size))
+        print(
+            "w_notin: {}".format(
+                verb_w_notin["correct"].sum() / verb_w_notin["correct"].size
+            )
+        )
 
 
-if __name__ == '__main__':
-    experiment_analysis('data/', verbs.get_all_verbs(),
-                        plots=True, confusion=True, filename='data/combo_plot.png')
+if __name__ == "__main__":
+    experiment_analysis(
+        "data/",
+        verbs.get_all_verbs(),
+        plots=True,
+        confusion=True,
+        filename="data/combo_plot.png",
+    )
+

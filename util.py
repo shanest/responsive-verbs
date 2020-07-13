@@ -34,8 +34,7 @@ def read_trials_from_csv(path, trials):
     """
     data = {}
     for trial in trials:
-        data[trial] = pd.DataFrame.from_csv(
-            '{}/trial_{}.csv'.format(path, trial))
+        data[trial] = pd.DataFrame.from_csv("{}/trial_{}.csv".format(path, trial))
     return data
 
 
