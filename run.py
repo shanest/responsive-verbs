@@ -178,18 +178,10 @@ if __name__ == "__main__":
     # get parser args as a dict
     args = vars(parser.parse_args())
 
+    # TODO: factor out read config logic into util?
     with open(args['config'], "r") as config_file:
         args.update(yaml.load(config_file))
 
     args['write_dir'] = args['name'] + '/data'
-    print(args)
-
-    hparams = {
-        "verbs": verbs.get_all_verbs(),
-        "num_worlds": 16,  # needed for predictions
-        "num_classes": 2,
-        "layers": [{"units": 128, "activation": tf.nn.elu, "dropout": 0.1}] * 4,
-        "input_feature": "x",
-    }
 
     run_experiment(args)
