@@ -17,6 +17,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>
 from __future__ import division, print_function
 from collections import defaultdict
 import itertools as it
+import argparse
+
+import yaml
 import numpy as np
 import scipy.stats as stats
 import matplotlib as mpl
@@ -59,7 +62,7 @@ def experiment_analysis(
     final_n = 5
     final_points = {
         verb: [
-            np.mean(data[trial][verb.__name__ + "_accuracy"].values[-final_n:])
+            np.mean(data[trial][verb + "_accuracy"].values[-final_n:])
             for trial in data
         ]
         for verb in verbs
@@ -72,7 +75,7 @@ def experiment_analysis(
         for stat in ["tp", "tn", "fp", "fn"]:
             fig, ax = plt.subplots()
             for verb in verbs:
-                name = verb.__name__
+                name = verb
                 conf_mats[name][stat] = np.mean(
                     [data[trial][name + "_" + stat].values[-1] for trial in trials]
                 )
@@ -116,7 +119,7 @@ def experiment_analysis(
     final_data = {}
     for pair in pairs:
         print()
-        print("{} vs. {}".format(pair[0].__name__, pair[1].__name__))
+        print("{} vs. {}".format(pair[0], pair[1]))
         print(stats.ttest_rel(final_points[pair[0]], final_points[pair[1]]))
         print(stats.ttest_rel(convergence_points[pair[0]], convergence_points[pair[1]]))
         if confusion:
@@ -124,11 +127,11 @@ def experiment_analysis(
                 print(stat)
                 print(
                     stats.ttest_rel(
-                        conf_dists[pair[0].__name__][stat],
-                        conf_dists[pair[1].__name__][stat],
+                        conf_dists[pair[0]][stat],
+                        conf_dists[pair[1]][stat],
                     )
                 )
-        pair_name = "{} - {}".format(pair[0].__name__, pair[1].__name__)
+        pair_name = "{} - {}".format(pair[0], pair[1])
         final_data[pair_name] = np.array(final_points[pair[0]]) - np.array(
             final_points[pair[1]]
         )
@@ -149,8 +152,8 @@ def experiment_analysis(
 
         ax_dists1 = plt.subplot(gs[0, -1])
         for pair in pairs:
-            pair_name = "{} - {}".format(pair[0].__name__, pair[1].__name__)
-            if pair[0].__name__ == "Know":
+            pair_name = "{} - {}".format(pair[0], pair[1])
+            if pair[0] == "Know":
                 sns.distplot(
                     final_data[pair_name], rug=True, label=pair_name, ax=ax_dists1
                 )
@@ -158,8 +161,8 @@ def experiment_analysis(
 
         ax_dists2 = plt.subplot(gs[1, -1])
         for pair in pairs:
-            pair_name = "{} - {}".format(pair[0].__name__, pair[1].__name__)
-            if pair[0].__name__ == "BeCertain":
+            pair_name = "{} - {}".format(pair[0], pair[1])
+            if pair[0] == "BeCertain":
                 sns.distplot(
                     final_data[pair_name], rug=True, label=pair_name, ax=ax_dists2
                 )
@@ -206,7 +209,7 @@ def get_convergence_points(data, verbs, threshold):
             convergence_points[verb].append(
                 data[trial]["global_step"][
                     convergence_point(
-                        data[trial][verb.__name__ + "_accuracy"].values, threshold
+                        data[trial][verb + "_accuracy"].values, threshold
                     )
                 ]
             )
@@ -322,7 +325,7 @@ def make_plot(
         steps = data[trial]["global_step"].values
         for idx in range(len(verbs)):
             trials_by_verb[idx].append(
-                smooth_data(data[trial][verbs[idx].__name__ + "_accuracy"].values)
+                smooth_data(data[trial][verbs[idx] + "_accuracy"].values)
             )
             ax.plot(steps, trials_by_verb[idx][-1], COLORS[idx], alpha=0.2)
 
@@ -338,7 +341,7 @@ def make_plot(
             longest_x,
             medians_by_verb[idx],
             COLORS[idx],
-            label="P{}: {}".format(idx, verbs[idx].__name__),
+            label="P{}: {}".format(idx, verbs[idx]),
             linewidth=2.75,
         )
 
@@ -373,7 +376,7 @@ def make_plot(
                 longest_x,
                 medians_by_verb[idx],
                 COLORS[idx],
-                label=verbs[idx].__name__,
+                label=verbs[idx],
                 linewidth=2.5,
             )
         axins.set_xlim(inset["xlim"])
@@ -415,7 +418,7 @@ def make_boxplots(convergence_points, verbs):
         quants: names of quantifiers
     """
     plt.boxplot([convergence_points[verb] for verb in verbs])
-    plt.xticks(range(1, len(verbs) + 1), [verb.__name__ for verb in verbs])
+    plt.xticks(range(1, len(verbs) + 1), verbs)
     plt.show()
 
 
@@ -486,7 +489,7 @@ def smooth_data(data, smooth_weight=0.85):
 def predictions_analysis(path, verbs, trials=range(60)):
     data = {}
     for trial in trials:
-        data[trial] = pd.DataFrame.from_csv(
+        data[trial] = pd.read_csv(
             "{}/trial_{}_predictions.csv".format(path, trial)
         )
         data[trial]["trial"] = trial
@@ -494,7 +497,7 @@ def predictions_analysis(path, verbs, trials=range(60)):
     del data  # free up memory
 
     for verb in verbs:
-        name = verb.__name__
+        name = verb
         print("\n" + name)
         by_verb = all_data[all_data["verb"] == name]
         verb_decl = by_verb[by_verb["interrogative"] == 0]
@@ -526,9 +529,17 @@ def predictions_analysis(path, verbs, trials=range(60)):
 
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--config", type=str)
+    args = vars(parser.parse_args())
+
+    with open(args['config'], "r") as config_file:
+        args.update(yaml.load(config_file))
+
     experiment_analysis(
-        "data/",
-        verbs.get_all_verbs(),
+        args['name'] + "/data/",
+        args['verbs'],
+        trials=range(args['num_trials']),
         plots=True,
         confusion=True,
         filename="data/combo_plot.png",
