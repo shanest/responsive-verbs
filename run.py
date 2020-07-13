@@ -144,7 +144,7 @@ def run_trial(eparams, hparams, trial_num,
 
 # DEFINE AN EXPERIMENT
 def main_experiment(eparams, hparams):
-    for trial in xrange(eparams['num_trials']):
+    for trial in range(eparams['num_trials']):
         run_trial(eparams, hparams, trial, eparams['write_dir'])
 
 

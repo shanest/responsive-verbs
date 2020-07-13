@@ -125,7 +125,7 @@ def basic_ffnn(features, labels, mode, params):
     # -- label_by_verb[i]: Tensor containing true for verb i
     label_by_verb = tf.dynamic_partition(
         labels, verb_indices, num_verbs)
-    for idx in xrange(num_verbs):
+    for idx in range(num_verbs):
         # TODO: loss by verb as well?
         verb_name = params['verbs'][idx].__name__
         acc_key = '{}_accuracy'.format(verb_name)
