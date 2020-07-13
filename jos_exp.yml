@@ -1,10 +1,6 @@
 name: jos_exp
-# default behavior
-train: true
-eval: true
-predict: false
 # experiment parameters
-num_trials: 60
+num_trials: 10
 num_epochs: 15
 batch_size: 128
 num_worlds: 16
@@ -23,10 +19,19 @@ verbs:
   - BeCertain
   - Knopinion
   - Wondows
+# model parameters
 num_classes: 2
-num_layers: 4
-layer: 
-  units: 128
-  activation: tf.nn.elu
-  dropout: 0.1
 input_feature: "x"
+layers: 
+  - units: 128
+    activation: elu
+    dropout: 0.1
+  - units: 128
+    activation: elu
+    dropout: 0.1
+  - units: 128
+    activation: elu
+    dropout: 0.1
+  - units: 128
+    activation: elu
+    dropout: 0.1
