@@ -23,25 +23,25 @@ import verbs
 class DataGenerator(object):
     def __init__(
         self,
-        verbs,
+        verbs_list,
         num_worlds,
         max_cells,
         items_per_bin=1000,
         max_tries_per_bin=5000,
         test_bin_size=200,
     ):
-        self.verbs = verbs
+        self.verbs = [getattr(verbs, verb) for verb in verbs_list]
         self.num_worlds = num_worlds
         self.max_cells = max_cells
         self.items_per_bin = items_per_bin
         self.max_tries_per_bin = max_tries_per_bin
         self.one_hots = np.eye(num_worlds)
-        self.verb_labels = np.eye(len(verbs))
+        self.verb_labels = np.eye(len(verbs_list))
         self.point_length = num_worlds ** 2 + 2 * num_worlds
         self.test_bin_size = test_bin_size
 
         self.data = {
-            (verb, truth_value): [] for verb in verbs for truth_value in (True, False)
+            (verb, truth_value): [] for verb in self.verbs for truth_value in (True, False)
         }
         self.generate_data()
 
