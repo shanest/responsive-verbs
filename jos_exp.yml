@@ -1,6 +1,6 @@
 name: jos_exp
 # experiment parameters
-num_trials: 1
+num_trials: 60
 num_epochs: 15
 batch_size: 128
 num_worlds: 16

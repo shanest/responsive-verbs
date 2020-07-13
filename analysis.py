@@ -62,8 +62,7 @@ def experiment_analysis(
     final_n = 5
     final_points = {
         verb: [
-            np.mean(data[trial][verb + "_accuracy"].values[-final_n:])
-            for trial in data
+            np.mean(data[trial][verb + "_accuracy"].values[-final_n:]) for trial in data
         ]
         for verb in verbs
     }
@@ -127,8 +126,7 @@ def experiment_analysis(
                 print(stat)
                 print(
                     stats.ttest_rel(
-                        conf_dists[pair[0]][stat],
-                        conf_dists[pair[1]][stat],
+                        conf_dists[pair[0]][stat], conf_dists[pair[1]][stat],
                     )
                 )
         pair_name = "{} - {}".format(pair[0], pair[1])
@@ -208,9 +206,7 @@ def get_convergence_points(data, verbs, threshold):
         for verb in verbs:
             convergence_points[verb].append(
                 data[trial]["global_step"][
-                    convergence_point(
-                        data[trial][verb + "_accuracy"].values, threshold
-                    )
+                    convergence_point(data[trial][verb + "_accuracy"].values, threshold)
                 ]
             )
     return convergence_points
@@ -489,9 +485,7 @@ def smooth_data(data, smooth_weight=0.85):
 def predictions_analysis(path, verbs, trials=range(60)):
     data = {}
     for trial in trials:
-        data[trial] = pd.read_csv(
-            "{}/trial_{}_predictions.csv".format(path, trial)
-        )
+        data[trial] = pd.read_csv("{}/trial_{}_predictions.csv".format(path, trial))
         data[trial]["trial"] = trial
     all_data = pd.concat([data[trial] for trial in trials], ignore_index=True)
     del data  # free up memory
@@ -533,15 +527,16 @@ if __name__ == "__main__":
     parser.add_argument("--config", type=str)
     args = vars(parser.parse_args())
 
-    with open(args['config'], "r") as config_file:
+    with open(args["config"], "r") as config_file:
         args.update(yaml.load(config_file))
 
+    dir_name = args["name"] + "/data"
+
     experiment_analysis(
-        args['name'] + "/data/",
-        args['verbs'],
-        trials=range(args['num_trials']),
+        dir_name,
+        args["verbs"],
+        trials=range(args["num_trials"]),
         plots=True,
         confusion=True,
-        filename="data/combo_plot.png",
+        filename=dir_name + "/combo_plot.png",
     )
-

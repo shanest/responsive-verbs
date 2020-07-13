@@ -41,7 +41,9 @@ class DataGenerator(object):
         self.test_bin_size = test_bin_size
 
         self.data = {
-            (verb, truth_value): [] for verb in self.verbs for truth_value in (True, False)
+            (verb, truth_value): []
+            for verb in self.verbs
+            for truth_value in (True, False)
         }
         self.generate_data()
 

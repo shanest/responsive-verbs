@@ -179,9 +179,9 @@ if __name__ == "__main__":
     args = vars(parser.parse_args())
 
     # TODO: factor out read config logic into util?
-    with open(args['config'], "r") as config_file:
+    with open(args["config"], "r") as config_file:
         args.update(yaml.load(config_file))
 
-    args['write_dir'] = args['name'] + '/data'
+    args["write_dir"] = args["name"] + "/data"
 
     run_experiment(args)

@@ -50,7 +50,9 @@ def basic_ffnn(features, labels, mode, params):
     net = inputs
     for layer in params["layers"]:
         # TODO: dropout?
-        net = tf.layers.dense(net, units=layer["units"], activation=getattr(tf.nn, layer["activation"]))
+        net = tf.layers.dense(
+            net, units=layer["units"], activation=getattr(tf.nn, layer["activation"])
+        )
         if layer["dropout"]:
             net = tf.layers.dropout(net, rate=layer["dropout"], training=training)
         # -- net: [batch_size, params['layers'][-1]['units']]
