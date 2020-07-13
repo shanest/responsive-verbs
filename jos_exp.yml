@@ -1,0 +1,32 @@
+name: jos_exp
+# default behavior
+train: true
+eval: true
+predict: false
+# experiment parameters
+num_trials: 60
+num_epochs: 15
+batch_size: 128
+num_worlds: 16
+max_cells: 4
+# how many data-points per verb/truth-value pair
+items_per_bin: 16000
+# how many times to try rejection sampling
+tries_per_bin: 60000
+test_bin_size: 4000
+# how often to eval
+eval_steps: 50
+stop_loss: 0.02
+# verbs
+verbs:
+  - Know
+  - BeCertain
+  - Knopinion
+  - Wondows
+num_classes: 2
+num_layers: 4
+layer: 
+  units: 128
+  activation: tf.nn.elu
+  dropout: 0.1
+input_feature: "x"
