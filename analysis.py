@@ -170,8 +170,7 @@ def experiment_analysis(
             plt.savefig(filename, bbox_inches="tight")
         else:
             plt.show()
-        plt.clf()
-        plt.cla()
+        plt.close()
 
         sns.barplot(data=pd.DataFrame(final_data))
         plt.show()
