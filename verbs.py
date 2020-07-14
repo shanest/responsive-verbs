@@ -16,6 +16,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>
 """
 # TODO: document
 import abc
+from functools import reduce
 import numpy as np
 
 
@@ -286,6 +287,10 @@ def list_subset(ls1, ls2):
     return set(ls1) < set(ls2)
 
 
+def flatten_partition(partition):
+    return reduce(lambda a, b: a + b, partition)
+
+
 class Verb(object):
 
     __metaclass__ = abc.ABCMeta
@@ -502,6 +507,83 @@ class Wondows(Verb):
         intersect_every_cell = num_cells_intersect(partition, dox_w) == len(partition)
 
         return in_info_q and intersect_every_cell
+
+
+class Opinion(Verb):
+    """Verb meaning: \P \w: dox_w in P or dox_w in neg-P
+    """
+
+    @staticmethod
+    def generate_true(num_worlds, max_cells):
+
+        partition, world, dox_w, _ = Verb.initialize(num_worlds, max_cells)
+
+        world_cell = cell_of_elt(partition, world, num_worlds)
+
+        # add at least 1 element of cell to dox_w
+        how_many = 1 + np.random.randint(len(world_cell))
+        dox_w[np.random.choice(world_cell, [how_many], replace=False)] = 1
+
+        return partition, world, dox_w
+
+    @staticmethod
+    def verify_true(partition, world, dox_w, is_declarative):
+
+        world_cell = cell_of_elt(partition, world, len(dox_w))
+        dox_cell = np.nonzero(dox_w)[0]
+        dox_sub_w = list_subset(dox_cell, world_cell)
+
+        return dox_sub_w
+
+
+class AllOpen(Verb):
+    """Verb meaning: \P \w:
+    for every q in alt(f), dox_w \cap q is not empty
+    """
+
+    @staticmethod
+    def generate_true(num_worlds, max_cells):
+
+        partition, world, dox_w, is_declarative = Verb.initialize(num_worlds, max_cells)
+
+        for cell in partition:
+            how_many = 1 + np.random.randint(len(cell))
+            dox_w[np.random.choice(cell, [how_many], replace=False)] = 1
+
+        return partition, world, dox_w
+
+    @staticmethod
+    def verify_true(partition, world, dox_w, is_declarative):
+
+        intersect_every_cell = num_cells_intersect(partition, dox_w) == len(partition)
+
+        return intersect_every_cell
+
+
+class BelieveInfo(Verb):
+    """Verb meaning: \P \w: dox_w subset info(P)
+    """
+
+    @staticmethod
+    def generate_true(num_worlds, max_cells):
+
+        partition, world, dox_w, is_declarative = Verb.initialize(num_worlds, max_cells)
+
+        flattened = flatten_partition(partition)
+
+        how_many = 1 + np.random.randint(len(flattened))
+        dox_w[np.random.choice(flattened, [how_many], replace=False)] = 1
+
+        return partition, world, dox_w
+
+    @staticmethod
+    def verify_true(partition, world, dox_w, is_declarative):
+
+        flattened = flatten_partition(partition)
+        flat_as_array = np.zeros(len(dox_w))
+        flat_as_array[flattened] = 1
+
+        return (dox_w & flat_as_array == dox_w).all()
 
 
 def get_all_verbs():
