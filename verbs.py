@@ -509,8 +509,9 @@ class Wondows(Verb):
         return in_info_q and intersect_every_cell
 
 
-class Opinion(Verb):
-    """Verb meaning: \P \w: dox_w in P or dox_w in neg-P
+class WondowLess(Verb):
+    """Verb meaning: \P \w: dox_w subset info(P) and
+    for every q in alt(f), dox_w \cap q is not empty
     """
 
     @staticmethod
@@ -518,22 +519,19 @@ class Opinion(Verb):
 
         partition, world, dox_w, _ = Verb.initialize(num_worlds, max_cells)
 
-        world_cell = cell_of_elt(partition, world, num_worlds)
-
-        # add at least 1 element of cell to dox_w
-        how_many = 1 + np.random.randint(len(world_cell))
-        dox_w[np.random.choice(world_cell, [how_many], replace=False)] = 1
+        for cell in partition:
+            how_many = 1 + np.random.randint(len(cell))
+            dox_w[np.random.choice(cell, [how_many], replace=False)] = 1
 
         return partition, world, dox_w
 
     @staticmethod
     def verify_true(partition, world, dox_w, is_declarative):
 
-        world_cell = cell_of_elt(partition, world, len(dox_w))
-        dox_cell = np.nonzero(dox_w)[0]
-        dox_sub_w = list_subset(dox_cell, world_cell)
+        in_info_q = in_partition(partition, world)
+        intersect_every_cell = num_cells_intersect(partition, dox_w) == len(partition)
 
-        return dox_sub_w
+        return in_info_q and intersect_every_cell
 
 
 class AllOpen(Verb):
@@ -579,8 +577,8 @@ class BelieveInfo(Verb):
     @staticmethod
     def verify_true(partition, world, dox_w, is_declarative):
 
-        flattened = flatten_partition(partition)
-        flat_as_array = np.zeros(len(dox_w))
+        flattened = np.array(flatten_partition(partition))
+        flat_as_array = np.zeros(len(dox_w)).astype(int)
         flat_as_array[flattened] = 1
 
         return (dox_w & flat_as_array == dox_w).all()

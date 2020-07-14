@@ -151,7 +151,7 @@ def experiment_analysis(
         ax_dists1 = plt.subplot(gs[0, -1])
         for pair in pairs:
             pair_name = "{} - {}".format(pair[0], pair[1])
-            if pair[0] == "Know":
+            if pair[0] == verbs[0]:
                 sns.distplot(
                     final_data[pair_name], rug=True, label=pair_name, ax=ax_dists1
                 )
@@ -160,7 +160,7 @@ def experiment_analysis(
         ax_dists2 = plt.subplot(gs[1, -1])
         for pair in pairs:
             pair_name = "{} - {}".format(pair[0], pair[1])
-            if pair[0] == "BeCertain":
+            if pair[0] == verbs[1]:
                 sns.distplot(
                     final_data[pair_name], rug=True, label=pair_name, ax=ax_dists2
                 )
@@ -170,6 +170,8 @@ def experiment_analysis(
             plt.savefig(filename, bbox_inches="tight")
         else:
             plt.show()
+        plt.clf()
+        plt.cla()
 
         sns.barplot(data=pd.DataFrame(final_data))
         plt.show()
@@ -537,6 +539,6 @@ if __name__ == "__main__":
         args["verbs"],
         trials=range(args["num_trials"]),
         plots=True,
-        confusion=True,
+        confusion=False,
         filename=dir_name + "/combo_plot.png",
     )
