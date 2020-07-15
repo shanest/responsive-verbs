@@ -41,7 +41,9 @@ COLORS = ["xkcd:forest green", "xkcd:blue green", "xkcd:light orange", "xkcd:pea
 
 
 def experiment_analysis(
-    path, verbs, trials=range(60), plots=True, confusion=True, filename=None
+    path, verbs, trials=range(60), plots=True, confusion=True, filename=None,
+    inset={"zoom": 3.25, "xlim": (9000, 11200), "ylim": (0.93, 0.9575)},
+    ylim=(0.8, 0.96),
 ):
     """Prints statistical tests and makes plots for experiment one.
 
@@ -142,9 +144,9 @@ def experiment_analysis(
         make_plot(
             data,
             verbs,
-            ylim=(0.8, 0.96),
+            ylim=ylim,
             threshold=None,
-            inset={"zoom": 3.25, "xlim": (9000, 11200), "ylim": (0.93, 0.9575)},
+            inset=inset,
             ax=ax_acc,
         )
 
@@ -540,4 +542,7 @@ if __name__ == "__main__":
         plots=True,
         confusion=False,
         filename=dir_name + "/combo_plot.png",
+        # TODO: handle default arguments here?
+        inset = args['inset'],
+        ylim=args['ylim']
     )
