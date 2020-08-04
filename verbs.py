@@ -383,11 +383,11 @@ class Verb(object):
         is_declarative = np.random.random() < 0.5
         partition = generate_partition(num_worlds, is_declarative, max_cells)
         world = np.random.randint(num_worlds)
-        dox_w = (
-            np.random.choice([0, 1], [num_worlds])
-            if dox_random
-            else np.zeros([num_worlds], dtype=np.int_)
-        )
+        dox_w = np.zeros([num_worlds], dtype=np.int_)
+        if dox_random:
+            # make sure dox_w is non-empty if doing random generation
+            while sum(dox_w) == 0:
+                dox_w = np.random.choice([0, 1], [num_worlds])
         return partition, world, dox_w, is_declarative
 
 
