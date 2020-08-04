@@ -17,6 +17,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>
 # TODO: document
 import abc
 from functools import reduce
+import random
 import numpy as np
 
 
@@ -261,6 +262,17 @@ def index_of_elt(part, elt):
     raise ValueError("{} not in {}".format(elt, part))
 
 
+def intersecting_cells(partition, dox_w):
+    """ Get all cells of partition that intersect with dox_w. """
+    cells = set()
+    num_worlds = len(dox_w)
+    partition = fill_in_partition(partition, num_worlds)
+    for world in range(num_worlds):
+        if dox_w[world]:
+            cells.add(partition[index_of_elt(partition, world)])
+    return cells
+
+
 def num_cells_intersect(partition, dox_w):
     """How many cells of a partition does a set of worlds non-trivially
     intersect.
@@ -273,13 +285,7 @@ def num_cells_intersect(partition, dox_w):
         the number of items in partition containing a world such that
         dox_w[world] is 1
     """
-    cells = set()
-    num_worlds = len(dox_w)
-    partition = fill_in_partition(partition, num_worlds)
-    for world in range(num_worlds):
-        if dox_w[world]:
-            cells.add(index_of_elt(partition, world))
-    return len(cells)
+    return len(intersecting_cells(partition, dox_w))
 
 
 def list_subset(ls1, ls2):
@@ -582,6 +588,45 @@ class BelieveInfo(Verb):
         flat_as_array[flattened] = 1
 
         return (dox_w & flat_as_array == dox_w).all()
+
+
+class BelPart(Verb):
+    """Verb meaning: \P \w: exists X \subseteq alt(P) s.t. \cup X \neq W and dox_w subset \cup X
+    """
+
+    @staticmethod
+    def generate_true(num_worlds, max_cells):
+
+        partition, world, dox_w, is_declarative = Verb.initialize(num_worlds, max_cells)
+
+        # for an n-cell partition, select up to n-1 cells
+        # max(1, ...) for the declarative case, where there's only one cell
+        cells = random.sample(partition, max(1, len(partition) - 1))
+
+        for cell in cells:
+            how_many = 1 + np.random.randint(len(cell))
+            dox_w[np.random.choice(cell, [how_many], replace=False)] = 1
+
+        return partition, world, dox_w
+
+    @staticmethod
+    def verify_true(partition, world, dox_w, is_declarative):
+
+        if is_declarative:
+            dox_cell = np.nonzero(dox_w)[0]
+            # whether dox_w is a subset of P
+            dox_sub_X = list_subset(dox_cell, partition[0])
+            if not dox_sub_X:
+                return False
+
+        num_worlds = len(dox_w)
+        # get cells that dox_w is a subset of
+        intersecting = intersecting_cells(partition, dox_w)
+        # get all worlds in those cells
+        flattened = flatten_partition(intersecting)
+
+        # make sure it's not all worlds
+        return len(flattened) != num_worlds
 
 
 def get_all_verbs():
