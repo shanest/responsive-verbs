@@ -20,7 +20,12 @@ import argparse
 
 import tensorflow as tf
 import pandas as pd
-import yaml
+
+from yaml import load, dump
+try:
+    from yaml import CLoader as Loader, CDumper as Dumper
+except ImportError:
+    from yaml import Loader, Dumper
 
 import verbs
 import util
@@ -180,7 +185,7 @@ if __name__ == "__main__":
 
     # TODO: factor out read config logic into util?
     with open(args["config"], "r") as config_file:
-        args.update(yaml.load(config_file))
+        args.update(load(config_file, Loader=Loader))
 
     args["write_dir"] = args["name"] + "/data"
 
