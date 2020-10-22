@@ -1,0 +1,47 @@
+name: single/belpart
+# experiment parameters
+num_trials: 30
+num_epochs: 20
+batch_size: 128
+num_worlds: 16
+max_cells: 4
+# how many data-points per verb/truth-value pair
+items_per_bin: 16000
+# how many times to try rejection sampling
+tries_per_bin: 60000
+test_bin_size: 4000
+# how often to eval
+eval_steps: 100
+stop_loss: 0.0
+# verbs
+verbs:
+  - BelPart
+# model parameters
+num_classes: 2
+input_feature: "x"
+layers: 
+  - units: 128
+    activation: elu
+    dropout: 0.1
+  - units: 128
+    activation: elu
+    dropout: 0.1
+  - units: 128
+    activation: elu
+    dropout: 0.1
+  - units: 128
+    activation: elu
+    dropout: 0.1
+# visualization/analysis parameters
+threshold: 0.85
+ylim:
+  - 0.8
+  - 1.0
+inset:
+  zoom: 3.25
+  xlim:
+    - 13500
+    - 15000
+  ylim:
+    - 0.93
+    - 0.96
