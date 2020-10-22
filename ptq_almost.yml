@@ -1,6 +1,6 @@
-name: ptq_part
+name: ptq_almost
 # experiment parameters
-num_trials: 30
+num_trials: 15
 num_epochs: 20
 batch_size: 128
 num_worlds: 16
@@ -15,7 +15,7 @@ eval_steps: 100
 stop_loss: 0.0
 # verbs
 verbs:
-  - BelPart
+  - AlmostBel
   - BeCertain
   - AllOpen
   - WondowLess 

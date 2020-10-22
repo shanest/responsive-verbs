@@ -1,4 +1,4 @@
-name: ptq_part
+name: only_part
 # experiment parameters
 num_trials: 30
 num_epochs: 20
@@ -16,9 +16,6 @@ stop_loss: 0.0
 # verbs
 verbs:
   - BelPart
-  - BeCertain
-  - AllOpen
-  - WondowLess 
 # model parameters
 num_classes: 2
 input_feature: "x"

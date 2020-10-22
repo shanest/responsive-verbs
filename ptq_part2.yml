@@ -1,6 +1,6 @@
-name: ptq_part
+name: ptq_part2
 # experiment parameters
-num_trials: 30
+num_trials: 15
 num_epochs: 20
 batch_size: 128
 num_worlds: 16

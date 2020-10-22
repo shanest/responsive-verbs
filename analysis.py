@@ -43,7 +43,7 @@ COLORS = ["xkcd:forest green", "xkcd:blue green", "xkcd:light orange", "xkcd:pea
 def experiment_analysis(
     path, verbs, trials=range(60), plots=True, confusion=True, filename=None,
     inset={"zoom": 3.25, "xlim": (9000, 11200), "ylim": (0.93, 0.9575)},
-    ylim=(0.8, 0.96),
+    ylim=(0.8, 0.96), threshold=None,
 ):
     """Prints statistical tests and makes plots for experiment one.
 
@@ -52,7 +52,7 @@ def experiment_analysis(
         plots: whether to make plots or not
     """
 
-    threshold = 0.925
+    threshold = threshold or 0.925
     # read the data in
     data = util.read_trials_from_csv(path, trials)
     # FILTER OUT TRIALS WHERE RNN DID NOT LEARN
@@ -544,5 +544,6 @@ if __name__ == "__main__":
         filename=dir_name + "/combo_plot.png",
         # TODO: handle default arguments here?
         inset = args['inset'],
-        ylim=args['ylim']
+        ylim=args['ylim'],
+        threshold=args['threshold']
     )
