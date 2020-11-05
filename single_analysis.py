@@ -1,5 +1,6 @@
 import pandas as pd
 import plotnine as pn
+import scipy.stats as stats
 
 import analysis
 import util
@@ -30,6 +31,14 @@ for verb in verbs:
             {"verb": verb, "trial": trial, "accuracy": sum(accuracies[-5:]) / 5},
             ignore_index=True,
         )
+
+print(final_acc[final_acc['verb']=='WondowLess'].describe())
+print(final_acc[final_acc['verb']=='AllOpen'].describe())
+
+print(stats.ttest_ind(
+    final_acc[final_acc['verb']=='WondowLess']['accuracy'].values, 
+    final_acc[final_acc['verb']=='AllOpen']['accuracy'].values
+))
 
 print(long_data)
 

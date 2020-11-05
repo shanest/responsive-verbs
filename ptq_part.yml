@@ -15,8 +15,8 @@ eval_steps: 100
 stop_loss: 0.0
 # verbs
 verbs:
-  - BelPart
   - BeCertain
+  - BelPart
   - AllOpen
   - WondowLess 
 # model parameters
